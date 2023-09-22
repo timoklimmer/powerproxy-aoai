@@ -7,6 +7,11 @@ PowerProxy for AOAI - reverse proxy to process requests and responses to/from Az
 
 # pylint: disable=invalid-name, import-error
 
+from helpers import app_insights
+
+# Setup tracing first
+app_insights.init()
+
 import io
 import json
 
@@ -25,6 +30,12 @@ PORT = get_config('port', validate=int, default=80)
 
 # define and run proxy app
 app = FastAPI()
+
+# Instrument FastAPI with OpenTelemetry
+if app_insights.ENABLED:
+    from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+
+    FastAPIInstrumentor.instrument_app(app)
 
 
 # app startup event

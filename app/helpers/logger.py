@@ -1,4 +1,5 @@
 from helpers.config import get_config
+from opentelemetry.sdk._logs import LoggingHandler
 from typing import List
 import logging
 
@@ -19,3 +20,9 @@ def build_logger(name: str) -> logging.Logger:
     logger.setLevel("DEBUG")
     LOGGERS.append(logger)
     return logger
+
+
+def enable_app_insights() -> None:
+    for logger in LOGGERS:
+        handler = LoggingHandler()
+        logger.addHandler(handler)

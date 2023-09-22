@@ -48,6 +48,12 @@ monitoring:
     app_level: INFO
     # Enum: "NOSET", "DEBUG", "INFO", "WARN", "ERROR", "FATAL", "CRITICAL"
     sys_level: ERROR
+  # Azure Application Insights
+  app_insights:
+    # bool
+    enabled: true
+    # Connection string
+    connection_str: ___
 
 # region to which the proxy shall be deployed to Azure
 # example: westeurope
