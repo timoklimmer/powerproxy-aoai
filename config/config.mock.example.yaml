@@ -1,0 +1,10 @@
+clients:
+  - name: Built-in tests
+    key: 1234abcd
+
+plugins:
+  - name: LogUsageToConsole
+
+aoai:
+  endpoint: http://127.0.0.1:8081/
+  key: "dummy"

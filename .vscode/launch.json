@@ -5,12 +5,22 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Debug powerproxy.py",
+            "name": "Debug with \"local\" config",
             "type": "python",
             "request": "launch",
             "cwd": "${workspaceFolder}/app",
             "program": "powerproxy.py",
             "args": ["--config-file", "../config/config.local.yaml"],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "name": "Debug with \"mock\" config",
+            "type": "python",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/app",
+            "program": "powerproxy.py",
+            "args": ["--config-file", "../config/config.mock.yaml"],
             "console": "integratedTerminal",
             "justMyCode": true
         }
