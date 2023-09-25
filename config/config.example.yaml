@@ -41,6 +41,14 @@ aoai:
   # note: is not required when Azure AD is used to auth against Azure OpenAI
   key: ___
 
+monitoring:
+  # Technical logging
+  logging:
+    # Enum: "NOSET", "DEBUG", "INFO", "WARN", "ERROR", "FATAL", "CRITICAL"
+    app_level: INFO
+    # Enum: "NOSET", "DEBUG", "INFO", "WARN", "ERROR", "FATAL", "CRITICAL"
+    sys_level: ERROR
+
 # region to which the proxy shall be deployed to Azure
 # example: westeurope
 region: westeurope

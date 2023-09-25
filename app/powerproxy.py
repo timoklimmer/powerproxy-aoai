@@ -15,12 +15,12 @@ import uvicorn
 from fastapi import FastAPI, Request, status
 from fastapi.responses import Response, StreamingResponse
 from helpers.config import get_config
-from helpers.header import print_header
+from helpers.logger import build_logger
 from plugins.base import foreach_plugin
 from version import VERSION
 
-
 # misc
+_logger = build_logger(__name__)
 PORT = get_config('port', validate=int, default=80)
 
 # define and run proxy app
@@ -32,8 +32,8 @@ app = FastAPI()
 async def startup_event():
     """Invoked when the app is started."""
     # print header and config values
-    print_header(f"PowerProxy for Azure OpenAI - v{VERSION}")
-    print(f"Proxy port: {PORT}")
+    _logger.info(f"PowerProxy for Azure OpenAI - v{VERSION}")
+    _logger.debug(f"Proxy port: {PORT}")
 
     # instantiate HTTP client for AOAI endpoint
     app.state.target_client: httpx.AsyncClient = httpx.AsyncClient(
@@ -41,9 +41,7 @@ async def startup_event():
     )
 
     # print serve notification
-    print()
-    print("Serving incoming requests...")
-    print()
+    _logger.info("Serving incoming requests...")
 
 
 # app shutdown
@@ -114,10 +112,12 @@ async def handle_request(request: Request, path: str):
         client = client_map[headers["api-key"]] if client is None else client
         headers["api-key"] = get_config("key", sections="aoai", validate=str, required=True)
 
+    _logger.debug(f"Identified client: {client}")
     routing_slip["client"] = client
     foreach_plugin("on_client_identified", routing_slip)
 
     # forward request to target endpoint and get response
+    _logger.debug(f"Forwarded headers: {headers}")
     aoai_response: httpx.Response = await app.state.target_client.request(
         request.method,
         path,

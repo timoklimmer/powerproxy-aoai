@@ -6,6 +6,10 @@ from azure.identity import ChainedTokenCredential, ClientSecretCredential, Manag
 from azure.monitor.ingestion import LogsIngestionClient
 from plugins.LogUsage.LogUsageBase import LogUsageBase
 from typing import Dict, Any
+from helpers.logger import build_logger
+
+
+_logger = build_logger(__name__)
 
 
 class LogUsageToLogAnalytics(LogUsageBase):
@@ -31,12 +35,11 @@ class LogUsageToLogAnalytics(LogUsageBase):
         self.data_collection_rule_id = plugin_configuration.get("data_collection_rule_id")
         self.stream_name = plugin_configuration.get("stream_name")
 
-        print()
-        print(f"Log ingestion endpoint          : {self.log_ingestion_endpoint}")
-        print(f"Credential Tenant ID            : {self.credential_tenant_id}")
-        print(f"Credential Client ID            : {self.credential_client_id}")
-        print(f"Data Collection Rule ID         : {self.data_collection_rule_id}")
-        print(f"Stream Name                     : {self.stream_name}")
+        _logger.info(f"Log ingestion endpoint          : {self.log_ingestion_endpoint}")
+        _logger.info(f"Credential Tenant ID            : {self.credential_tenant_id}")
+        _logger.info(f"Credential Client ID            : {self.credential_client_id}")
+        _logger.info(f"Data Collection Rule ID         : {self.data_collection_rule_id}")
+        _logger.info(f"Stream Name                     : {self.stream_name}")
 
     def on_plugin_instantiated(self):
         """Run directly after the new plugin instance has been instantiated."""
