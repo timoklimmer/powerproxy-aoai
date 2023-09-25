@@ -3,6 +3,10 @@
 #        - should be a single line, even for defining multiple clients
 #        - leave empty if Azure AD auth against Azure OpenAI is used.
 clients:
+  # Default key used for project tests, localed in "test/test_*.py" files
+  - name: Built-in tests
+    key: 123abc
+  # Usage examples
   - name: Team 1
     key: 28ef59ae30342978f81c4ad96ce47ab
   - name: Team 2

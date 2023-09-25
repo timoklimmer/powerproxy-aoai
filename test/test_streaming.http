@@ -1,6 +1,6 @@
 ### against real AOAI
 
-POST https://___.openai.azure.com/openai/deployments/gpt-35-turbo/chat/completions?api-version=2023-03-15-preview HTTP/1.1
+POST https://___.openai.azure.com/openai/deployments/gpt/chat/completions?api-version=2023-03-15-preview HTTP/1.1
 Content-Type: application/json
 Connection: keep-alive
 api-key: ___
@@ -13,7 +13,7 @@ Accept: */*
 
 ### against local PowerProxy
 
-POST http://localhost/openai/deployments/gpt-35-turbo/chat/completions?api-version=2023-03-15-preview HTTP/1.1
+POST http://localhost/openai/deployments/gpt/chat/completions?api-version=2023-03-15-preview HTTP/1.1
 Content-Type: application/json
 Connection: keep-alive
 api-key: 98ef51ae30342978f81c4ad96ce47ab
@@ -26,7 +26,7 @@ Accept: */*
 
 ### against PowerProxy deployed on Container Apps
 
-POST https://___.___.___.azurecontainerapps.io/openai/deployments/gpt-35-turbo/chat/completions?api-version=2023-03-15-preview HTTP/1.1
+POST https://___.___.___.azurecontainerapps.io/openai/deployments/gpt/chat/completions?api-version=2023-03-15-preview HTTP/1.1
 Content-Type: application/json
 Connection: keep-alive
 api-key: 98ef51ae30342978f81c4ad96ce47ab

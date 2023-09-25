@@ -6,8 +6,8 @@ from langchain.agents import AgentType, initialize_agent, tool
 from langchain.llms import AzureOpenAI
 
 OPENAI_API_BASE = "http://localhost"
-OPENAI_API_KEY = "0123456789abcdef0123456789abcde"
-OPENAI_API_DEPLOYMENT_NAME = "gpt-35-turbo"
+OPENAI_API_KEY = "123abc"
+OPENAI_API_DEPLOYMENT_NAME = "gpt"
 OPENAI_API_VERSION = "2023-03-15-preview"
 
 
