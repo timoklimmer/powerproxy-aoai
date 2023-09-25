@@ -12,16 +12,23 @@ import json
 
 import httpx
 import uvicorn
-from fastapi import FastAPI, Request, status
+from fastapi import FastAPI, Request, status, HTTPException
 from fastapi.responses import Response, StreamingResponse
 from helpers.config import get_config
 from helpers.logger import build_logger
 from plugins.base import foreach_plugin
 from version import VERSION
+from tenacity import (
+    retry_if_exception_type,
+    retry,
+    stop_after_attempt,
+    wait_random_exponential,
+)
 
 # misc
 _logger = build_logger(__name__)
 PORT = get_config('port', validate=int, default=80)
+OPENAI_HEADER_AUTH_NAME = "api-key"
 
 # define and run proxy app
 app = FastAPI()
@@ -97,20 +104,23 @@ async def handle_request(request: Request, path: str):
     fixed_client = get_config("FIXED_CLIENT", validate=str)
     client = fixed_client if fixed_client else None
 
-    if "api-key" in headers:
-        client_map = dict(
-            (client.get("key"), client.get("name"))
-            for client in get_config("clients", validate=list, required=True)
+    if OPENAI_HEADER_AUTH_NAME not in headers:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f'No provided API key. Ensure that the "{OPENAI_HEADER_AUTH_NAME}" header contains valid API key.',
         )
-        if headers["api-key"] not in client_map:
-            raise ValueError(
-                (
-                    "The provided API key is not a valid PowerProxy key. Ensure that the 'api-key' "
-                    "header contains valid API key from the PowerProxy's configuration."
-                )
-            )
-        client = client_map[headers["api-key"]] if client is None else client
-        headers["api-key"] = get_config("key", sections="aoai", validate=str, required=True)
+
+    client_map = dict(
+        (client.get("key"), client.get("name"))
+        for client in get_config("clients", validate=list, required=True)
+    )
+    if headers[OPENAI_HEADER_AUTH_NAME] not in client_map:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f'The provided API key is not a valid PowerProxy key. Ensure that the "{OPENAI_HEADER_AUTH_NAME}" header contains valid API key.',
+        )
+    client = client_map[headers[OPENAI_HEADER_AUTH_NAME]] if client is None else client
+    headers[OPENAI_HEADER_AUTH_NAME] = get_config("key", sections="aoai", validate=str, required=True)
 
     _logger.debug(f"Identified client: {client}")
     routing_slip["client"] = client
@@ -118,12 +128,12 @@ async def handle_request(request: Request, path: str):
 
     # forward request to target endpoint and get response
     _logger.debug(f"Forwarded headers: {headers}")
-    aoai_response: httpx.Response = await app.state.target_client.request(
+    aoai_response = await _send_to_openai(
         request.method,
         path,
-        params=request.query_params,
-        headers=headers,
-        content=routing_slip["incoming_request_body"],
+        request.query_params,
+        headers,
+        routing_slip["incoming_request_body"],
     )
 
     routing_slip["headers_from_target"] = aoai_response.headers
@@ -186,18 +196,53 @@ async def handle_request(request: Request, path: str):
             )
 
 
+@retry(
+    reraise=True,
+    retry=retry_if_exception_type(
+        (httpx.NetworkError, httpx.RemoteProtocolError, httpx.DecodingError)
+    ),
+    stop=stop_after_attempt(3),
+    wait=wait_random_exponential(multiplier=0.5, max=30),
+)
+async def _send_to_openai(method, path, params, headers, content) -> httpx.Response:
+    try:
+        return await app.state.target_client.request(
+            method,
+            path,
+            content=content,
+            follow_redirects=False,
+            headers=headers,
+            params=params,
+            timeout=60,
+        )
+    except httpx.TimeoutException:
+        _logger.error(
+            "OpenAI backend does not respond on time. Make sure network connection between PowerProxy and Azure OpenAI works properly, then investigate on Azure OpenAI API."
+        )
+        raise HTTPException(status_code=status.HTTP_408_REQUEST_TIMEOUT)
+    except httpx.ConnectError:
+        _logger.error(
+            "OpenAI backend does not respond. Make sure the URL is properly configured, then investigate on Azure OpenAI API.",
+            exc_info=True,
+        )
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+
 if __name__ == "__main__":
-    # note: this applies only when the powerproxy.py script is executed directly. In the Dockerfile
-    #       provided, we use a uvicorn command to run the app, so parameters might need to be
-    #       modified there AS WELL.
+    # This applies only when the powerproxy.py script is executed directly. In the Dockerfile provided, we use a uvicorn command to run the app, so parameters might need to be modified there AS WELL.
+    #
+    # Note about headers:
+    # - We do need those related to proxy (param named "proxy_headers"), in the case the app is ran in a container behind a reverse proxy, like Traefik, Nginx, etc.
+    # - We do need those related to date (param named "date_header"), as we want to be able to see the date of the request in the monitoring, and the customer able to calculate the latency plus cache the response.
+    # - We do not need those related to server (param named "server_header"), as we do not want to expose the fact that we are using FastAPI or Uvicorn, this is a security measure.
     uvicorn.run(
         app,
         host="0.0.0.0",
         port=PORT,
         log_level="warning",
         server_header=False,
-        date_header=False,
-        proxy_headers=False,
+        date_header=True,
+        proxy_headers=True,
         timeout_keep_alive=120,
         timeout_graceful_shutdown=120,
     )
