@@ -1,0 +1,8 @@
+{
+  "application_insights_name": "shared-monitoring",
+  "application_insights_resource_group_name": "shared-monitoring",
+  "config_yaml_path": "../config/config.azure.yaml",
+  "github_token": "github_pat_xxx",
+  "region_id": "francecentral",
+  "resource_prefix": "powerproxy"
+}

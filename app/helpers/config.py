@@ -1,116 +1,141 @@
 """Several methods and classes around configuration."""
 
+from enum import Enum
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Type, TypeVar, Union
+from uuid import UUID
 import json
 import os
-
 import yaml
-from plugins.base import PowerProxyPlugin, foreach_plugin
-
-# pylint: disable=relative-beyond-top-level
-from .dicts import QueryDict
-
-# pylint: enable=relative-beyond-top-level
+import re
 
 
-class Configuration:
-    """Configuration class."""
+T = TypeVar("T", bool, int, float, UUID, str, Enum, list, dict, None)
+TEST_SUBSTITUTION = re.compile(r"({(.*)})")
+CACHE: Dict[str, T] = {}
 
-    def __init__(self, values_dict):
-        """Constructor."""
-        self.values_dict = QueryDict(values_dict)
-        self.clients = [client["name"] for client in self.get("clients")]
-        self.key_client_map = {client["key"]: client["name"] for client in self.get("clients")}
-        self.plugin_names = [plugin["name"] for plugin in self.get("plugins")]
 
-        # instantiate plugins
-        self.plugins = [
-            PowerProxyPlugin.get_plugin_instance(
-                plugin_config["name"], self, QueryDict(plugin_config)
-            )
-            for plugin_config in self.get("plugins")
-        ]
-        foreach_plugin(self.plugins, "on_plugin_instantiated")
+class ConfigNotFound(Exception):
+    pass
 
-    def __getitem__(self, key):
-        """Dunder method to get config value via ["..."] syntax."""
-        return self.values_dict[key]
 
-    def get(self, path, default=None):
-        """Return value under given path."""
-        return self.values_dict.get(path, default)
+def get_config(
+    key: str,
+    validate: Type[T],
+    default: Any = None,
+    required: bool = False,
+    sections: Optional[Union[str, List[str]]] = None,
+) -> T:
+    """
+    Get config from environment variable or config file.
+    """
+    cache_key = ".".join(
+        []
+        + ([] if not sections else sections if isinstance(sections, list) else [sections])
+        + [key]
+    )
 
-    def print(self):
-        """Print the current configuration."""
-        Configuration.print_setting("Clients identified by API Key", ", ".join(self.clients))
-        Configuration.print_setting(
-            "Fixed client overwrite",
-            f"{self['fixed_client'] if self['fixed_client'] else '(not set)'}",
-        )
-        Configuration.print_setting("Plugins enabled", ", ".join(self.plugin_names))
-        Configuration.print_setting("Azure OpenAI endpoint (backend)", self["aoai/endpoint"])
+    if cache_key in CACHE:
+        return CACHE[cache_key]
 
-    @staticmethod
-    def print_setting(name, value):
-        """Print the given setting name and value."""
-        print(f"{name.ljust(32)}: {value}")
-
-    @staticmethod
-    def from_file(file_path):
-        """Load configuration from file."""
-        with open(file_path, "r", encoding="utf-8") as file:
-            return Configuration(yaml.safe_load(file))
-
-    @staticmethod
-    def from_json_string(json_string):
-        """Load configuration from JSON string."""
-        try:
-            return Configuration(json.loads(json_string))
-        except ValueError:
-            # pylint: disable=raise-missing-from
-            raise ValueError(
-                (f"The provided config string '{json_string}' is not a valid JSON document.")
-            )
-            # pylint: enable=raise-missing-from
-
-    @staticmethod
-    def from_env_var(env_var_name="POWERPROXY_CONFIG_STRING", skip_no_env_var_exception=False):
-        """Load configuration from environment variable."""
-        if env_var_name in os.environ:
-            return Configuration.from_json_string(os.environ[env_var_name])
-        if not skip_no_env_var_exception:
-            raise ValueError(
-                f"Cannot load configuration from environment variable '{env_var_name}' because it "
-                f"does not exist."
-            )
-
-    @staticmethod
-    def from_args(args):
-        """Load configuration from script arguments."""
-        result = None
-        if args.config_file:
-            result = Configuration.from_file(args.config_file)
-        elif args.config_env_var and args.config_env_var in os.environ:
-            result = Configuration.from_env_var(args.config_env_var)
-        elif args.config_env_var and args.config_env_var not in os.environ:
-            raise ValueError(
-                (
-                    f"The specified environment variable '{args.config_env_var}', which shall "
-                    "contain the configuration for PowerProxy, does not exist."
-                )
-            )
-        elif args.config_string:
-            result = Configuration.from_json_string(args.config_string)
-        elif "POWERPROXY_CONFIG_STRING" in os.environ:
-            result = Configuration.from_env_var(
-                "POWERPROXY_CONFIG_STRING", skip_no_env_var_exception=True
-            )
+    # Get config from file
+    res = None
+    if sections:
+        if isinstance(sections, list):
+            res = CONFIG
+            for section in sections:
+                res = res.get(section, {})
         else:
-            raise ValueError(
-                (
-                    "No configuration provided. Ensure that you pass in a valid configuration "
-                    "either by using argument '--config-file', '-config-env-var', or "
-                    "'--config-string' or provide a valid config string in env variable named "
-                    "'POWERPROXY_CONFIG_STRING' (in single-line JSON format)."
-                )
-            )
-        return result
+            res = CONFIG.get(sections, {})
+        res = res.get(key, default)
+    else:
+        res = CONFIG.get(key, default)
+
+    # Check if required
+    if required and not res:
+        raise ConfigNotFound(f'Cannot find config "{sections}/{key}"')
+
+    # Convert to res_type
+    try:
+        if validate is str:  # str
+            res = str(res)
+        elif validate is bool:  # bool
+            res = bool(res)
+        elif validate is int:  # int
+            res = int(res)
+        elif validate is float:  # float
+            res = float(res)
+        elif validate is UUID:  # UUID
+            res = UUID(res)
+        elif validate is list:  # list
+            res = list(res)
+        elif validate is dict:  # dict
+            res = dict(res)
+        elif issubclass(validate, Enum):  # Enum
+            res = validate(res)
+    except (ValueError, TypeError, AttributeError):
+        raise ConfigNotFound(
+            f'Cannot convert config "{sections}/{key}" ({validate}), found "{res}" ({type(res)})'
+        )
+
+    # Check res type
+    if not isinstance(res, validate):
+        raise ConfigNotFound(
+            f'Cannot validate config "{sections}/{key}" ({validate}), found "{res}" ({type(res)})'
+        )
+
+    res = _substitute(res)
+    CACHE[cache_key] = res
+    return res
+
+
+def _substitute(element: Union[str, List, Dict]) -> Union[str, List, Dict]:
+    """
+    Replace chars surrounded by double quotes, like "{xxxx}", by the related env.
+    """
+    if isinstance(element, str):
+        for substitution in re.findall(TEST_SUBSTITUTION, element):
+            env = os.environ.get(substitution[1])
+            if env:
+                element = element.replace(substitution[0], env)
+    elif isinstance(element, list):
+        for i, v in enumerate(element):
+            element[i] = _substitute(v)
+    elif isinstance(element, dict):
+        for k, v in element.items():
+            element.update({_substitute(k): _substitute(v)})
+    return element
+
+
+CONFIG: Dict[str, Any] = {}
+CONFIG_ENV = os.environ.get("POWERPROXY_CONFIG_JSON")
+
+if not CONFIG_ENV:
+    print('No JSON config defined from "POWERPROXY_CONFIG_JSON", pass')
+else:
+    try:
+        CONFIG = json.loads(CONFIG_ENV)
+        print("JSON config is loaded from env")
+    except json.JSONDecodeError as e:
+        print("Failed to load JSON config from env")
+        print(e)
+
+if not CONFIG:
+    CONFIG_FILE = os.environ.get("POWERPROXY_CONFIG_FILE", "config.yaml")
+    CONFIG_FOLDER = Path(os.environ.get("POWERPROXY_CONFIG_PATH", ".")).absolute()
+    CONFIG_PATH: Union[str, None] = None
+    while CONFIG_FOLDER:
+        CONFIG_PATH = f"{CONFIG_FOLDER}/{CONFIG_FILE}"
+        print(f'Try to load config from "{CONFIG_PATH}"')
+        try:
+            with open(CONFIG_PATH, "rb") as file:
+                CONFIG = yaml.safe_load(file)
+            break
+        except FileNotFoundError:
+            if CONFIG_FOLDER.parent == CONFIG_FOLDER:
+                raise ConfigNotFound("Cannot find config file")
+            CONFIG_FOLDER = CONFIG_FOLDER.parent.parent
+        except Exception as e:
+            print(f'Cannot load config file "{CONFIG_PATH}"')
+            raise e
+    print(f'Config "{CONFIG_PATH}" loaded')

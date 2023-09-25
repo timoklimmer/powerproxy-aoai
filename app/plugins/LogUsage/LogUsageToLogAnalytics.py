@@ -4,8 +4,8 @@
 
 from azure.identity import ChainedTokenCredential, ClientSecretCredential, ManagedIdentityCredential
 from azure.monitor.ingestion import LogsIngestionClient
-from helpers.dicts import QueryDict
 from plugins.LogUsage.LogUsageBase import LogUsageBase
+from typing import Dict, Any
 
 
 class LogUsageToLogAnalytics(LogUsageBase):
@@ -20,9 +20,9 @@ class LogUsageToLogAnalytics(LogUsageBase):
 
     log_analytics_client = None
 
-    def __init__(self, app_configuration, plugin_configuration: QueryDict):
+    def __init__(self, plugin_configuration: Dict[str, Any]):
         """Constructor."""
-        super().__init__(app_configuration, plugin_configuration)
+        super().__init__(plugin_configuration)
 
         self.log_ingestion_endpoint = plugin_configuration.get("log_ingestion_endpoint")
         self.credential_tenant_id = plugin_configuration.get("credential_tenant_id")
