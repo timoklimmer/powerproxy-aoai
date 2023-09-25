@@ -1,0 +1,6 @@
+# Local configuration
+default.properties
+
+# Results
+results/
+jmeter.log

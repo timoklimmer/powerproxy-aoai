@@ -1,0 +1,16 @@
+version: v0.1
+testId: default
+displayName: Default
+testPlan: default.jmx
+description: Default
+engineInstances: 1
+properties:
+  userPropertyFile: "default.properties"
+configurationFiles:
+  - "default-chatcompletion.csv"
+  - "default-completion.csv"
+  - "default-embedding.csv"
+failureCriteria:
+  - p50(response_time_ms) > 400
+  - p95(response_time_ms) > 1500
+  - percentage(error) > 1
