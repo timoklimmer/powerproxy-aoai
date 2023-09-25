@@ -1,3 +1,7 @@
+# Port where the proxy runs. Ports <= 1024 may need special permissions in Linux.
+# default: 80
+port: ___
+
 # the teams or use cases accessing Azure OpenAI (aka. "clients") and their keys
 # notes: - each client must have a unique key. PowerProxy identifies clients by the given key.
 #        - should be a single line, even for defining multiple clients

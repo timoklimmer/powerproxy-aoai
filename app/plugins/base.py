@@ -1,15 +1,31 @@
 """Defines the foundation for PowerProxy plugins."""
 
+from helpers.config import get_config
+from typing import Dict, Any, List
 import importlib
 import re
+
+
+def foreach_plugin(method_name, *args):
+    """
+    Have each plugin run the method with the given name and arguments.
+    """
+    for plugin in PLUGINS:
+        if hasattr(plugin, method_name):
+            getattr(plugin, method_name)(*args)
+        else:
+            raise ValueError(
+                (
+                    f"Plugin class '{plugin.__class__()}' does not have a method named '{method_name}'."
+                )
+            )
 
 
 class PowerProxyPlugin:
     """A plugin for PowerProxy, doing different things at different events."""
 
-    def __init__(self, app_configuration, plugin_configuration):
+    def __init__(self, plugin_configuration: Dict[str, Any]):
         """Constructor."""
-        self.app_configuration = app_configuration
         self.plugin_configuration = plugin_configuration
 
     def on_plugin_instantiated(self):
@@ -42,21 +58,14 @@ class PowerProxyPlugin:
         )
 
     @staticmethod
-    def get_plugin_instance(plugin_name, app_configuration, plugin_configuration):
+    def get_plugin_instance(plugin_name, plugin_configuration):
         """Return an instance of the plugin with the given name."""
         plugin_class = PowerProxyPlugin.get_plugin_class(plugin_name)
-        return plugin_class(app_configuration, plugin_configuration)
+        return plugin_class(plugin_configuration)
 
 
-def foreach_plugin(plugins, method_name, *args):
-    """Have each plugin run the method with the given name and arguments."""
-    for plugin in plugins:
-        if hasattr(plugin, method_name):
-            getattr(plugin, method_name)(*args)
-        else:
-            raise ValueError(
-                (
-                    f"Plugin class '{plugin.__class__()}' does not have a method named "
-                    f"'{method_name}'."
-                )
-            )
+PLUGINS: List[PowerProxyPlugin] = [
+    PowerProxyPlugin.get_plugin_instance(plugin["name"], plugin)
+    for plugin in get_config("plugins", validate=list, required=True)
+]
+foreach_plugin("on_plugin_instantiated")
