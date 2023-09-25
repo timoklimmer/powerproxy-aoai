@@ -1,0 +1,7 @@
+__pycache__
+app/secrets/*
+config/*
+logs/*
+!config/@note.txt
+!config/*.example.*
+!config/to_json_string.py

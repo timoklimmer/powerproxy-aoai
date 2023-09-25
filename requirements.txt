@@ -1,0 +1,7 @@
+pyyaml
+httpx
+uvicorn[standard]
+fastapi
+tiktoken
+azure-identity
+azure-monitor-ingestion

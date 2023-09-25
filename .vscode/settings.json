@@ -1,0 +1,15 @@
+{
+    "editor.rulers": [
+        {
+            "column": 100,
+            "color": "#333333"
+        }
+    ],
+    "[python]": {
+        "editor.defaultFormatter": "ms-python.black-formatter"
+    },
+    "black-formatter.args": [
+        "--line-length",
+        "100"
+    ]
+}

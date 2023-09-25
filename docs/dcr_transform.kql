@@ -1,0 +1,12 @@
+source
+| extend TimeGenerated = now()
+| project
+    TimeGenerated,
+    RequestStartMinute,
+    Client,
+    PromptTokens,
+    CompletionTokens,
+    TotalTokens,
+    IsStreaming,
+    OpenAIProcessingMS,
+    OpenAIRegion

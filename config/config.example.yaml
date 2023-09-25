@@ -1,0 +1,50 @@
+# the teams or use cases accessing Azure OpenAI (aka. "clients") and their keys
+# notes: - each client must have a unique key. PowerProxy identifies clients by the given key.
+#        - should be a single line, even for defining multiple clients
+#        - leave empty if Azure AD auth against Azure OpenAI is used.
+clients:
+  - name: Team 1
+    key: 28ef59ae30342978f81c4ad96ce47ab
+  - name: Team 2
+    key: 1113456789abcdef0123456789abcde
+
+# if set, the proxy will always use the specified client for all requests
+# notes: - this is required when Azure AD auth against Azure OpenAI is used because there is no
+#          other way to identify the client then.
+#        - leave empty ("") when API key authentication is used.
+# example: Some Team
+fixed_client:
+
+# defines the plugins enabled for the proxy
+plugins:
+  - name: LogUsageToConsole
+  - name: LogUsageToCsvFile
+  - name: LogUsageToLogAnalytics
+    log_ingestion_endpoint: https://___.___.ingest.monitor.azure.com
+    data_collection_rule_id: ___
+    stream_name: Custom-AzureOpenAIUsage_CL
+    credential_tenant_id: ___
+    credential_client_id: ___
+    credential_client_secret: ___
+
+# Azure OpenAI
+aoai:
+  # endpoint
+  # example value: https://<use your own resource name here>.openai.azure.com/
+  endpoint: https://___.openai.azure.com/
+
+  # key to access Azure OpenAI
+  # note: is not required when Azure AD is used to auth against Azure OpenAI
+  key: ___
+
+# region to which the proxy shall be deployed to Azure
+# example: westeurope
+region: westeurope
+
+# resource group to which the proxy shall be deployed to Azure
+# example: PowerProxy-AOAI
+resource_group: PowerProxy-AOAI
+
+# unique prefix to prepend to certain resource names to avoid naming conflicts.
+# example: abcde
+unique_prefix: ___

@@ -1,0 +1,22 @@
+[
+    {
+        "RequestStartMinute": "2023-08-17 19:23",
+        "Client": "SomeTeam",
+        "IsStreaming": true,
+        "PromptTokens": 61,
+        "CompletionTokens": 16,
+        "TotalTokens": 77,
+        "OpenAIProcessingMS": 598.9179,
+        "OpenAIRegion": "East US"
+    },
+    {
+        "RequestStartMinute": "2023-08-17 19:23",
+        "Client": "AnotherTeam",
+        "IsStreaming": false,
+        "PromptTokens": 61,
+        "CompletionTokens": 16,
+        "TotalTokens": 77,
+        "OpenAIProcessingMS": 598.9179,
+        "OpenAIRegion": "East US"
+    }
+]
