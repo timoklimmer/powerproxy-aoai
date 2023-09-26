@@ -120,8 +120,8 @@ used. Once exact numbers are available for streaming responses, this repo will b
 non-streaming responses, token numbers are exact.
 
 ## Authors
-Timo Klimmer, Microsoft (lead)
-Clémense Lesné, Microsoft
+- Timo Klimmer, Microsoft (lead)
+- Clémense Lesné, Microsoft
 
 ## Contributing
 If you want to contribute, feel free to send pull requests. After successful review, we will merge
