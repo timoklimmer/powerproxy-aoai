@@ -4,7 +4,11 @@ import json
 import os
 
 import yaml
+
+# pylint: disable=import-error
 from plugins.base import PowerProxyPlugin, foreach_plugin
+
+# pylint: enable=import-error
 
 # pylint: disable=relative-beyond-top-level
 from .dicts import QueryDict
