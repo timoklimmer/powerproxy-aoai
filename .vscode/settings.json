@@ -1,15 +1,17 @@
 {
     "editor.rulers": [
-        {
-            "column": 100,
-            "color": "#333333"
-        }
+        { "column": 100 }
     ],
+    "files.insertFinalNewline": true,
+    "files.trimTrailingWhitespace": true,
     "[python]": {
-        "editor.defaultFormatter": "ms-python.black-formatter"
+        "editor.defaultFormatter": "ms-python.black-formatter",
+        "editor.formatOnPaste": true,
+        "editor.formatOnSave": true,
+        "editor.formatOnSaveMode": "file"
     },
     "black-formatter.args": [
-        "--line-length",
-        "100"
+        "--line-length=100",
+        "--target-version=py311"
     ]
 }
