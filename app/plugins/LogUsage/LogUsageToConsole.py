@@ -2,7 +2,11 @@
 
 # pylint: disable=invalid-name,too-many-arguments,import-error,no-name-in-module,too-few-public-methods
 
+from helpers.logger import build_logger
 from plugins.LogUsage.LogUsageBase import LogUsageBase
+
+
+_logger = build_logger(__name__)
 
 
 class LogUsageToConsole(LogUsageBase):
@@ -21,7 +25,7 @@ class LogUsageToConsole(LogUsageBase):
         openai_region,
     ):
         """Append a new line with the given infos."""
-        print(
+        _logger.info(
             "---\n"
             f"Request start minute           : {request_start_minute}\n"
             f"Request start minute UTC       : {request_start_minute_utc}\n"

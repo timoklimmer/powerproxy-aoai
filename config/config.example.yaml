@@ -1,3 +1,7 @@
+# Port where the proxy runs. Ports <= 1024 may need special permissions in Linux.
+# default: 80
+port: ___
+
 # the teams or use cases accessing Azure OpenAI (aka. "clients") and their keys
 # notes: - each client must have a unique key. PowerProxy identifies clients by the given key.
 #        - should be a single line, even for defining multiple clients
@@ -36,6 +40,20 @@ aoai:
   # key to access Azure OpenAI
   # note: is not required when Azure AD is used to auth against Azure OpenAI
   key: ___
+
+monitoring:
+  # Technical logging
+  logging:
+    # Enum: "NOSET", "DEBUG", "INFO", "WARN", "ERROR", "FATAL", "CRITICAL"
+    app_level: INFO
+    # Enum: "NOSET", "DEBUG", "INFO", "WARN", "ERROR", "FATAL", "CRITICAL"
+    sys_level: ERROR
+  # Azure Application Insights
+  app_insights:
+    # bool
+    enabled: true
+    # Connection string
+    connection_str: ___
 
 # region to which the proxy shall be deployed to Azure
 # example: westeurope
