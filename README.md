@@ -119,6 +119,10 @@ ask for a streaming response. In that case, an approximation based on code provi
 used. Once exact numbers are available for streaming responses, this repo will be updated. For
 non-streaming responses, token numbers are exact.
 
+## Authors
+Timo Klimmer, Microsoft (lead)
+Clémense Lesné, Microsoft
+
 ## Contributing
 If you want to contribute, feel free to send pull requests. After successful review, we will merge
 your contribution into the main branch and add it to the next releases. However, before starting any
