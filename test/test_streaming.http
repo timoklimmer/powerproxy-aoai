@@ -16,7 +16,7 @@ Accept: */*
 POST http://localhost/openai/deployments/gpt-35-turbo/chat/completions?api-version=2023-03-15-preview HTTP/1.1
 Content-Type: application/json
 Connection: keep-alive
-api-key: 98ef51ae30342978f81c4ad96ce47ab
+api-key: 72bd81ef32763530b29e3da63d46ad6
 X-OpenAI-Client-User-Agent: {"bindings_version": "0.27.8", "httplib": "requests", "lang": "python", "lang_version": "3.11.4", "platform": "Windows-10-10.0.22621-SP0", "publisher": "openai", "uname": "Windows 10 10.0.22621 AMD64 Intel64 Family 6 Model 142 Stepping 10, GenuineIntel"}
 User-Agent: OpenAI/v1 PythonBindings/0.27.8
 Accept-Encoding: gzip, deflate
@@ -29,7 +29,7 @@ Accept: */*
 POST https://___.___.___.azurecontainerapps.io/openai/deployments/gpt-35-turbo/chat/completions?api-version=2023-03-15-preview HTTP/1.1
 Content-Type: application/json
 Connection: keep-alive
-api-key: 98ef51ae30342978f81c4ad96ce47ab
+api-key: 72bd81ef32763530b29e3da63d46ad6
 X-OpenAI-Client-User-Agent: {"bindings_version": "0.27.8", "httplib": "requests", "lang": "python", "lang_version": "3.11.4", "platform": "Windows-10-10.0.22621-SP0", "publisher": "openai", "uname": "Windows 10 10.0.22621 AMD64 Intel64 Family 6 Model 142 Stepping 10, GenuineIntel"}
 User-Agent: OpenAI/v1 PythonBindings/0.27.8
 Accept-Encoding: gzip, deflate

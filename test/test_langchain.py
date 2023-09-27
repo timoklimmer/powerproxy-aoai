@@ -6,7 +6,7 @@ from langchain.agents import AgentType, initialize_agent, tool
 from langchain.llms import AzureOpenAI
 
 OPENAI_API_BASE = "http://localhost"
-OPENAI_API_KEY = "0123456789abcdef0123456789abcde"
+OPENAI_API_KEY = "04ae14bc78184621d37f1ce57a52eb7"
 OPENAI_API_DEPLOYMENT_NAME = "gpt-35-turbo"
 OPENAI_API_VERSION = "2023-03-15-preview"
 
@@ -27,6 +27,7 @@ def glossary(question: str) -> str:
     'Tell me what a handicap bet is!'
     """
     return "TODO: Pass this to the Glossary API and give a response from the glossary."
+
 
 @tool(return_direct=True)
 def default(question: str) -> str:

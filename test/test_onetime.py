@@ -5,7 +5,7 @@ import openai
 openai.api_type = "azure"
 openai.api_base = "http://localhost"
 openai.api_version = "2023-03-15-preview"
-openai.api_key = "98ef51ae30342978f81c4ad96ce47ab"
+openai.api_key = "04ae14bc78184621d37f1ce57a52eb7"
 
 response = openai.ChatCompletion.create(
     engine="gpt-35-turbo",
