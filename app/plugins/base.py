@@ -3,6 +3,25 @@
 import importlib
 import re
 
+# pylint: disable=import-error
+from helpers.tokens import estimate_prompt_tokens_from_request_body
+
+# pylint: enable=import-error
+
+
+def foreach_plugin(plugins, method_name, *args):
+    """Have each plugin run the method with the given name and arguments."""
+    for plugin in plugins:
+        if hasattr(plugin, method_name):
+            getattr(plugin, method_name)(*args)
+        else:
+            raise ValueError(
+                (
+                    f"Plugin class '{plugin.__class__()}' does not have a method named "
+                    f"'{method_name}'."
+                )
+            )
+
 
 class PowerProxyPlugin:
     """A plugin for PowerProxy, doing different things at different events."""
@@ -48,15 +67,52 @@ class PowerProxyPlugin:
         return plugin_class(app_configuration, plugin_configuration)
 
 
-def foreach_plugin(plugins, method_name, *args):
-    """Have each plugin run the method with the given name and arguments."""
-    for plugin in plugins:
-        if hasattr(plugin, method_name):
-            getattr(plugin, method_name)(*args)
-        else:
-            raise ValueError(
-                (
-                    f"Plugin class '{plugin.__class__()}' does not have a method named "
-                    f"'{method_name}'."
-                )
-            )
+class TokenCountingPlugin(PowerProxyPlugin):
+    """A plugin which counts tokens."""
+
+    prompt_tokens = None
+    streaming_prompt_tokens = None
+    completion_tokens = None
+    streaming_completion_tokens = None
+    total_tokens = None
+
+    def on_new_request_received(self, routing_slip):
+        """Run when a new request is received."""
+        super().on_new_request_received(routing_slip)
+
+        self.prompt_tokens = None
+        self.completion_tokens = None
+        self.streaming_prompt_tokens = None
+        self.streaming_completion_tokens = None
+        self.total_tokens = None
+
+    def on_body_dict_from_target_available(self, routing_slip):
+        """Run when the body was received from AOAI (only for one-time, non-streaming requests)."""
+        super().on_body_dict_from_target_available(routing_slip)
+
+        usage = routing_slip["body_dict_from_target"]["usage"]
+        self.completion_tokens = usage["completion_tokens"]
+        self.prompt_tokens = usage["prompt_tokens"]
+        self.total_tokens = usage["total_tokens"]
+
+    def on_data_event_from_target_received(self, routing_slip):
+        """Run when a data event has been received by AOAI (needs streaming requested)."""
+        super().on_data_event_from_target_received(routing_slip)
+
+        self.streaming_completion_tokens = (
+            self.streaming_completion_tokens + 1 if self.streaming_completion_tokens else 1
+        )
+
+    def on_end_of_target_response_stream_reached(self, routing_slip):
+        """Process the end of a stream (needs streaming requested)."""
+        super().on_end_of_target_response_stream_reached(routing_slip)
+
+        self.prompt_tokens = estimate_prompt_tokens_from_request_body(
+            routing_slip["incoming_request_body"]
+        )
+        self.completion_tokens = self.streaming_completion_tokens
+        self.total_tokens = (
+            self.prompt_tokens + self.completion_tokens
+            if self.prompt_tokens is not None and self.completion_tokens is not None
+            else None
+        )
