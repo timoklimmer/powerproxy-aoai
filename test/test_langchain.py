@@ -1,7 +1,5 @@
 """Script to test the proxy's support for langchain."""
 
-# pylint: disable=unused-argument, redefined-outer-name
-
 from langchain.agents import AgentType, initialize_agent, tool
 from langchain.llms import AzureOpenAI
 

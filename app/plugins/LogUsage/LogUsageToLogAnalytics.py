@@ -1,7 +1,5 @@
 """Declares a plugin to log usage infos to a CSV file."""
 
-# pylint: disable=invalid-name,too-many-arguments,import-error,no-name-in-module,too-few-public-methods
-
 from azure.identity import ChainedTokenCredential, ClientSecretCredential, ManagedIdentityCredential
 from azure.monitor.ingestion import LogsIngestionClient
 from helpers.dicts import QueryDict
@@ -57,9 +55,7 @@ class LogUsageToLogAnalytics(LogUsageBase):
 
     def _append_line(
         self,
-        # pylint: disable=unused-argument
         request_start_minute,
-        # pylint: enable=unused-argument
         request_start_minute_utc,
         client,
         is_streaming,

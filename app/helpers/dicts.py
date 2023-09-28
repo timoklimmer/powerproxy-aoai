@@ -2,6 +2,7 @@
 
 import re
 
+
 class QueryDict(dict):
     """Helper class to query and update a dict more conveniently."""
 
@@ -40,10 +41,8 @@ class QueryDict(dict):
                 try:
                     parent_element = parent_element[key_from_path]
                     continue
-                # pylint: disable=bare-except
                 except:
                     return default
-                # pylint: enable=bare-except
         return parent_element
 
     def set(self, path, value, separator="/", escape_sequence="''"):

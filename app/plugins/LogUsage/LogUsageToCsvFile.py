@@ -1,7 +1,5 @@
 """Declares a plugin to log usage infos to a CSV file."""
 
-# pylint: disable=invalid-name,too-many-arguments,import-error,no-name-in-module
-
 import os
 import time
 

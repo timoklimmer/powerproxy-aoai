@@ -5,8 +5,6 @@ PowerProxy for AOAI - reverse proxy to process requests and responses to/from Az
 - Adjust the launch configuration in VS.Code as needed (esp. for plugins enabled)
 """
 
-# pylint: disable=invalid-name, import-error
-
 import argparse
 import io
 import json
@@ -171,11 +169,9 @@ async def handle_request(request: Request, path: str):
             try:
                 routing_slip["body_dict_from_target"] = json.load(io.BytesIO(body))
                 foreach_plugin(config.plugins, "on_body_dict_from_target_available", routing_slip)
-            # pylint: disable=bare-except
             except:
                 # eat any exception in case the response cannot be parsed
                 pass
-            # pylint: enable=bare-except
             return Response(
                 content=body,
                 status_code=aoai_response.status_code,

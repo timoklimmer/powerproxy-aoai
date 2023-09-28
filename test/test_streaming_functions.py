@@ -1,7 +1,5 @@
 """Script to test the proxy's ability to support response streaming when functions are used."""
 
-# pylint: disable=line-too-long
-
 import openai
 
 openai.api_type = "azure"

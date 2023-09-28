@@ -1,7 +1,5 @@
 """Declares a plugin to log usage infos to console."""
 
-# pylint: disable=invalid-name,too-many-arguments,import-error,no-name-in-module,too-few-public-methods
-
 from plugins.LogUsage.LogUsageBase import LogUsageBase
 
 

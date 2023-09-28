@@ -1,7 +1,5 @@
 """Declares the base class for a plugin that logs usage information."""
 
-# pylint: disable=invalid-name,import-error,no-name-in-module,too-many-arguments,too-many-instance-attributes
-
 import datetime
 import time
 from abc import abstractmethod

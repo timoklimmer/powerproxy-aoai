@@ -1,7 +1,5 @@
 """Several methods around tokens."""
 
-# pylint: disable=line-too-long
-
 # notes:
 # - for non-streaming responses, usage info is provided in Azure OpenAI's response. Try to use these
 #   infos wherever possible.
@@ -24,11 +22,9 @@ def estimate_prompt_tokens_from_request_body(request_body):
     try:
         request_body_dict = json.load(io.BytesIO(request_body))
         return estimate_tokens_from_messages(request_body_dict["messages"])
-    # pylint: disable=bare-except
     except:
         # eat any exception and return 0 to avoid breaking the system
         return 0
-    # pylint: enable=bare-except
 
 
 def estimate_tokens_from_string(string, encoding_name="cl100k_base"):

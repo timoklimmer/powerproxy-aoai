@@ -4,16 +4,9 @@ import json
 import os
 
 import yaml
-
-# pylint: disable=import-error
 from plugins.base import PowerProxyPlugin, foreach_plugin
 
-# pylint: enable=import-error
-
-# pylint: disable=relative-beyond-top-level
 from .dicts import QueryDict
-
-# pylint: enable=relative-beyond-top-level
 
 
 class Configuration:
@@ -69,12 +62,10 @@ class Configuration:
         """Load configuration from JSON string."""
         try:
             return Configuration(json.loads(json_string))
-        except ValueError:
-            # pylint: disable=raise-missing-from
+        except ValueError as exception:
             raise ValueError(
                 (f"The provided config string '{json_string}' is not a valid JSON document.")
-            )
-            # pylint: enable=raise-missing-from
+            ) from exception
 
     @staticmethod
     def from_env_var(env_var_name="POWERPROXY_CONFIG_STRING", skip_no_env_var_exception=False):
