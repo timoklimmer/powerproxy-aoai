@@ -92,6 +92,8 @@ class TokenCountingPlugin(PowerProxyPlugin):
         self.prompt_tokens = usage["prompt_tokens"]
         self.total_tokens = usage["total_tokens"]
 
+        self.on_token_counts_for_request_available(routing_slip)
+
     def on_data_event_from_target_received(self, routing_slip):
         """Run when a data event has been received by AOAI (needs streaming requested)."""
         super().on_data_event_from_target_received(routing_slip)
@@ -113,3 +115,15 @@ class TokenCountingPlugin(PowerProxyPlugin):
             if self.prompt_tokens is not None and self.completion_tokens is not None
             else None
         )
+        self.on_token_counts_for_request_available(routing_slip)
+
+    def on_token_counts_for_request_available(self, routing_slip):
+        """Is invoked when token counts are available for the request."""
+
+
+class ImmediateResponseException(Exception):
+    """Exception thrown when a plugin needs a certain response returned immediately."""
+
+    def __init__(self, response):
+        """Constructor."""
+        self.response = response

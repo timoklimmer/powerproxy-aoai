@@ -15,7 +15,7 @@ from fastapi import FastAPI, Request, status
 from fastapi.responses import Response, StreamingResponse
 from helpers.config import Configuration
 from helpers.header import print_header
-from plugins.base import foreach_plugin
+from plugins.base import ImmediateResponseException, foreach_plugin
 from version import VERSION
 
 ## define script arguments
@@ -82,6 +82,12 @@ async def shutdown_event():
     await app.state.target_client.aclose()
 
 
+@app.exception_handler(ImmediateResponseException)
+async def exception_callback(request: Request, exception: ImmediateResponseException):
+    """Immediately return given response when an ImmediateResponseException is raised."""
+    return exception.response
+
+
 # liveness probe
 @app.get(
     "/powerproxy/health/liveness",
@@ -109,16 +115,17 @@ async def handle_request(request: Request, path: str):
     foreach_plugin(config.plugins, "on_new_request_received", routing_slip)
 
     # identify client and replace API key if needed
-    # notes: - When API authentication is used, we get an API key in header 'api-key'. This would
-    #          usually be the API key for Azure Open AI, but we configure and use client-specific
-    #          keys here for the proxy to identify the client and replace the API key against the
-    #          real AOAI key afterwards.
-    #        - For Azure AD authentication, we should get no API key but an Azure AD token in header
-    #          'Authorization'. Unfortunately, we cannot interpret or modify that token, so we need
-    #          another mechanism to identify clients. In that case, we need a separate instance of
-    #          PowerProxy for each client, whereby each client uses a fixed client.
-    #        - Some requests may neither contain an API key or an Azure AD token. In that case, we
-    #          need to make sure that the proxy continues to work.
+    # notes: - When API authentication is used, we get an API key in header 'api-key'. This
+    #          would usually be the API key for Azure Open AI, but we configure and use
+    #          client-specific keys here for the proxy to identify the client and replace the
+    #          API key against the real AOAI key afterwards.
+    #        - For Azure AD authentication, we should get no API key but an Azure AD token in
+    #          header 'Authorization'. Unfortunately, we cannot interpret or modify that token,
+    #          so we need another mechanism to identify clients. In that case, we need a
+    #          separate instance of PowerProxy for each client, whereby each client uses a fixed
+    #          client.
+    #        - Some requests may neither contain an API key or an Azure AD token. In that case,
+    #          we need to make sure that the proxy continues to work.
     headers = {
         key: request.headers[key]
         for key in set(request.headers.keys())
@@ -131,8 +138,9 @@ async def handle_request(request: Request, path: str):
         if headers["api-key"] not in config.key_client_map:
             raise ValueError(
                 (
-                    "The provided API key is not a valid PowerProxy key. Ensure that the 'api-key' "
-                    "header contains valid API key from the PowerProxy's configuration."
+                    "The provided API key is not a valid PowerProxy key. Ensure that the "
+                    "'api-key' header contains valid API key from the PowerProxy's "
+                    "configuration."
                 )
             )
         client = config.key_client_map[headers["api-key"]] if client is None else client
@@ -191,7 +199,9 @@ async def handle_request(request: Request, path: str):
                         if data != "[DONE]":
                             routing_slip["data_from_target"] = data
                             foreach_plugin(
-                                config.plugins, "on_data_event_from_target_received", routing_slip
+                                config.plugins,
+                                "on_data_event_from_target_received",
+                                routing_slip,
                             )
                 foreach_plugin(
                     config.plugins, "on_end_of_target_response_stream_reached", routing_slip

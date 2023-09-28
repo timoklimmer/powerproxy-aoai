@@ -36,6 +36,12 @@ class Configuration:
         """Return value under given path."""
         return self.values_dict.get(path, default)
 
+    def get_client_settings(self, client):
+        """Return the value of a client's setting."""
+        return next(
+            (client_config for client_config in self["clients"] if client_config["name"] == client)
+        )
+
     def print(self):
         """Print the current configuration."""
         Configuration.print_setting("Clients identified by API Key", ", ".join(self.clients))
