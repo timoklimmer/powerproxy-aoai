@@ -46,5 +46,5 @@ jobs:
       - name: Reset version to dev version
         run: |
           sed -i 's/VERSION = \".\+\"/VERSION = \"0.0.0\"/g' $VERSIONS_FILE_PATH
-          git commit $VERSIONS_FILE_PATH -m "Reset to version v0.0.0 after creation of release draft"
+          git commit $VERSIONS_FILE_PATH -m "Reset to dev version after creation of release draft"
           git push --force
