@@ -65,6 +65,7 @@ async def startup_event():
     print_header(f"PowerProxy for Azure OpenAI - v{VERSION}")
     Configuration.print_setting("Proxy port", args.port)
     config.print()
+    foreach_plugin(config.plugins, "on_print_configuration")
 
     # instantiate HTTP client for AOAI endpoint
     app.state.target_client: httpx.AsyncClient = httpx.AsyncClient(base_url=config["aoai/endpoint"])

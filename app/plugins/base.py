@@ -31,6 +31,10 @@ class PowerProxyPlugin:
     def on_plugin_instantiated(self):
         """Run directly after the new plugin instance has been instantiated."""
 
+    def on_print_configuration(self):
+        """Print plugin-specific configuration."""
+        print(f"- Plugin: {self.__class__.__name__}")
+
     def on_new_request_received(self, routing_slip):
         """Run when a new request has been received."""
 

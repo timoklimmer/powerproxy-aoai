@@ -53,9 +53,9 @@ class Configuration:
         Configuration.print_setting("Azure OpenAI endpoint (backend)", self["aoai/endpoint"])
 
     @staticmethod
-    def print_setting(name, value):
+    def print_setting(name, value, level=0):
         """Print the given setting name and value."""
-        print(f"{name.ljust(32)}: {value}")
+        print(f"{' ' * level * 3}{name.ljust(32) if level==0 else name}: {value}")
 
     @staticmethod
     def from_file(file_path):
