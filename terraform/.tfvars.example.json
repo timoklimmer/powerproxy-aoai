@@ -1,0 +1,6 @@
+{
+  "config_yaml_path": "../config/config.azure.yaml",
+  "github_token": "github_pat_xxx",
+  "region_id": "francecentral",
+  "resource_prefix": "powerproxy"
+}
