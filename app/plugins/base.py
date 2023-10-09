@@ -33,7 +33,7 @@ class PowerProxyPlugin:
 
     def on_print_configuration(self):
         """Print plugin-specific configuration."""
-        print(f"- Plugin: {self.__class__.__name__}")
+        print(f"Plugin config: {self.__class__.__name__}")
 
     def on_new_request_received(self, routing_slip):
         """Run when a new request has been received."""

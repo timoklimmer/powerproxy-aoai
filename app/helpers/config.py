@@ -49,13 +49,17 @@ class Configuration:
             "Fixed client overwrite",
             f"{self['fixed_client'] if self['fixed_client'] else '(not set)'}",
         )
+        if self["aoai/endpoint"]:
+            Configuration.print_setting("Azure OpenAI endpoint (backend)", self["aoai/endpoint"])
+        if self["aoai/mock_response"]:
+            Configuration.print_setting("Azure OpenAI mock response", self["aoai/mock_response"])
+
         Configuration.print_setting("Plugins enabled", ", ".join(self.plugin_names))
-        Configuration.print_setting("Azure OpenAI endpoint (backend)", self["aoai/endpoint"])
 
     @staticmethod
     def print_setting(name, value, level=0):
         """Print the given setting name and value."""
-        print(f"{' ' * level * 3}{name.ljust(32) if level==0 else name}: {value}")
+        print((f"{' ' * level * 3}{name.ljust(32) if level==0 else name}: {value}"))
 
     @staticmethod
     def from_file(file_path):
