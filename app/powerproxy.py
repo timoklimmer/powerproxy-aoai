@@ -6,6 +6,7 @@ PowerProxy for AOAI - reverse proxy to process requests and responses to/from Az
 """
 
 import argparse
+import asyncio
 import io
 import json
 
@@ -68,7 +69,23 @@ async def startup_event():
     foreach_plugin(config.plugins, "on_print_configuration")
 
     # instantiate HTTP client for AOAI endpoint
-    app.state.target_client: httpx.AsyncClient = httpx.AsyncClient(base_url=config["aoai/endpoint"])
+    if config.get("aoai/mock_response"):
+
+        async def get_mock_response(request):
+            ms_to_wait_before_return = config.get("aoai/mock_response/ms_to_wait_before_return")
+            if ms_to_wait_before_return:
+                ms_to_wait_before_return = float(ms_to_wait_before_return)
+                await asyncio.sleep(ms_to_wait_before_return / 1_000)
+            return httpx.Response(200, json=config.get("aoai/mock_response/json"))
+
+        app.state.target_client: httpx.AsyncClient = httpx.AsyncClient(
+            base_url="https://mock/",
+            transport=httpx.MockTransport(get_mock_response),
+        )
+    else:
+        app.state.target_client: httpx.AsyncClient = httpx.AsyncClient(
+            base_url=config["aoai/endpoint"]
+        )
 
     # print serve notification
     print()
@@ -145,7 +162,7 @@ async def handle_request(request: Request, path: str):
                 )
             )
         client = config.key_client_map[headers["api-key"]] if client is None else client
-        headers["api-key"] = config["aoai/key"]
+        headers["api-key"] = config["aoai/key"] or ""
     routing_slip["client"] = client
     foreach_plugin(config.plugins, "on_client_identified", routing_slip)
 

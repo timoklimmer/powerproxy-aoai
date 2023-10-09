@@ -50,6 +50,33 @@ aoai:
   # note: is not required when Azure AD is used to auth against Azure OpenAI
   key: ___
 
+  # # alternatively, specify a mock response to be used instead of the real response from
+  # # Azure OpenAI
+  # # note: use this for testing PowerProxy's scalability
+  # mock_response:
+  #   ms_to_wait_before_return: 1000
+  #   json: {
+  #     "id": "chatcmpl-87lITNUXLFIBHyDu3jFTtgOibcAxz",
+  #     "object": "chat.completion",
+  #     "created": 1696860797,
+  #     "model": "gpt-35-turbo",
+  #     "choices": [
+  #       {
+  #         "index": 0,
+  #         "finish_reason": "stop",
+  #         "message": {
+  #           "role": "assistant",
+  #           "content": "I'm a mock response and not a real answer from Azure OpenAI."
+  #         }
+  #       }
+  #     ],
+  #     "usage": {
+  #       "completion_tokens": 16,
+  #       "prompt_tokens": 61,
+  #       "total_tokens": 77
+  #     }
+  #   }
+
 # region to which the proxy shall be deployed to Azure
 # example: westeurope
 region: westeurope
