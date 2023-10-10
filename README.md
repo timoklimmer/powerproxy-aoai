@@ -52,6 +52,9 @@ approaches, less extra costs.
 
 ![collected metrics in Log Analytics](docs/query-results-in-log-analytics-chart.png)
 
+## Scalability
+![screenshot from Azure Load Testing](docs/scalability.png)
+
 ## Installation and Usage
 ### Local Machine
 1. Make sure you have a recent version of PowerShell installed (the repo was developed and tested
