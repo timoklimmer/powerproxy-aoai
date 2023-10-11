@@ -3,5 +3,5 @@ httpx==0.25.0
 uvicorn[standard]==0.23.2
 fastapi==0.103.2
 tiktoken==0.5.1
-azure-identity==1.14.0
+azure-identity==1.14.1
 azure-monitor-ingestion==1.0.2
