@@ -7,6 +7,7 @@ PowerProxy for AOAI - reverse proxy to process requests and responses to/from Az
 
 import argparse
 import asyncio
+from contextlib import asynccontextmanager
 import io
 import json
 
@@ -54,14 +55,12 @@ args, unknown = parser.parse_known_args()
 ## load configuration
 config = Configuration.from_args(args)
 
-## define and run proxy app
-app = FastAPI()
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan function for FastAPI."""
 
-# app startup event
-@app.on_event("startup")
-async def startup_event():
-    """Invoked when the app is started."""
+    # startup
     # print header and config values
     print_header(f"PowerProxy for Azure OpenAI - v{VERSION}")
     Configuration.print_setting("Proxy port", args.port)
@@ -92,12 +91,15 @@ async def startup_event():
     print("Serving incoming requests...")
     print()
 
+    # run the app
+    yield
 
-# app shutdown
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Invoked when the app is shut down."""
+    # shutdown
     await app.state.target_client.aclose()
+
+
+## define and run proxy app
+app = FastAPI(lifespan=lifespan)
 
 
 @app.exception_handler(ImmediateResponseException)
