@@ -25,7 +25,7 @@ clients:
 #          other way to identify the client then.
 #        - leave empty ("") when API key authentication is used.
 # example: Some Team
-fixed_client:
+#fixed_client:
 
 # defines the plugins enabled for the proxy
 plugins:
@@ -33,12 +33,16 @@ plugins:
   - name: LogUsageToConsole
   - name: LogUsageToCsvFile
   - name: LogUsageToLogAnalytics
-    log_ingestion_endpoint: https://___.___.ingest.monitor.azure.com
-    data_collection_rule_id: ___
-    stream_name: Custom-AzureOpenAIUsage_CL
-    credential_tenant_id: ___
-    credential_client_id: ___
-    credential_client_secret: ___
+    log_ingestion_endpoint: <will be set by deployment script>
+    data_collection_rule_id: <will be set by deployment script>
+    # by default, we use the managed identity in the resource group to auth against Log Analytics.
+    # if the managed identity cannot be used, as an alternative, credentials of a service principal
+    # can be specified here. make sure that the managed identity/service principle have the
+    # "Monitoring Metrics Publisher" role assigned to the Data Collection Rule (it might take up
+    # to 30 minutes to become effective after configuration).
+    #credential_tenant_id: ___
+    #credential_client_id: ___
+    #credential_client_secret: ___
 
 # Azure OpenAI
 aoai:
@@ -77,6 +81,9 @@ aoai:
   #     }
   #   }
 
+# id of the Azure subscription where the proxy shall be deployed to
+azure_subscription_id: ___
+
 # region to which the proxy shall be deployed to Azure
 # example: westeurope
 region: westeurope
@@ -88,3 +95,7 @@ resource_group: PowerProxy-AOAI
 # unique prefix to prepend to certain resource names to avoid naming conflicts.
 # example: abcde
 unique_prefix: ___
+
+# id of the user-assigned managed identity
+# note: PowerProxy will assume a system-assigned managed identity if not specified
+user_assigned_managed_identity_client_id: <will be set by deployment script>

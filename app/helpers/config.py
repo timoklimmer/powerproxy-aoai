@@ -71,11 +71,12 @@ class Configuration:
     def from_json_string(json_string):
         """Load configuration from JSON string."""
         try:
-            return Configuration(json.loads(json_string))
+            config_dict = json.loads(json_string)
         except ValueError as exception:
             raise ValueError(
                 (f"The provided config string '{json_string}' is not a valid JSON document.")
             ) from exception
+        return Configuration(config_dict)
 
     @staticmethod
     def from_env_var(env_var_name="POWERPROXY_CONFIG_STRING", skip_no_env_var_exception=False):

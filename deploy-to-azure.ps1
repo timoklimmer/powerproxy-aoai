@@ -17,11 +17,14 @@ az extension add -n containerapp
 az extension add -n monitor-control-service
 
 # configuration
-$CONFIG_STRING = (python config/to_json_string.py --yaml-file config/config.azure.yaml)
+$CONFIG_FILE = "config/config.azure.yaml"
+$CONFIG_STRING = (python config/to_json_string.py --yaml-file $CONFIG_FILE)
 $CONFIG = $CONFIG_STRING | ConvertFrom-Json
+$SUBSCRIPTION_ID = $CONFIG.azure_subscription_id
 $RESOURCE_GROUP = $CONFIG.resource_group
 $REGION = $CONFIG.region
 $UNIQUE_PREFIX = $CONFIG.unique_prefix
+$KEY_VAULT_NAME = "${UNIQUE_PREFIX}powerproxyaoai"
 $ACR_REGISTRY_NAME = "${UNIQUE_PREFIX}powerproxyaoai"
 $ACR_SKU = "Basic"
 $ACR_ADMIN_ENABLED = $True
@@ -30,13 +33,61 @@ $CONTAINER_TAG = "latest"
 $CONTAINER_APP_NAME = "powerproxyaoai"
 $CONTAINER_APP_ENVIRONMENT = "powerproxyaoai"
 $IMAGE = "$ACR_REGISTRY_NAME.azurecr.io/${CONTAINER_NAME}:$CONTAINER_TAG"
-$LOG_ANALYTICS_WORKSPACE_NAME = "powerproxyaoai"
-$LOG_ANALYTICS_USAGE_TABLE_NAME = "AzureOpenAIUsage_CL"  # note: Log Analytics requires custom table names to end with "_CL"
-$DATA_COLLECTION_ENDPOINT_NAME = "powerproxyaoai"
+$LOG_ANALYTICS_WORKSPACE_NAME = "${UNIQUE_PREFIX}powerproxyaoai"
+$LOG_ANALYTICS_AOAIUSAGE_TABLE_RETENTION_TIME = 90
+$DATA_COLLECTION_ENDPOINT_NAME = "${UNIQUE_PREFIX}powerproxyaoai"
+$USER_MANAGED_IDENTITY_NAME = "${UNIQUE_PREFIX}powerproxyaoai"
+
+# set subscription if set
+if ($NULL -ne $SUBSCRIPTION_ID) {
+  az account set -s $SUBSCRIPTION_ID
+}
 
 # create resource group
 Write-Host "Creating resource group..."
 az group create --name $RESOURCE_GROUP --location $REGION
+
+# create user-managed identity
+az identity create --name $USER_MANAGED_IDENTITY_NAME --resource-group $RESOURCE_GROUP
+$USER_MANAGED_IDENTITY_ID = (az identity show `
+  --name $USER_MANAGED_IDENTITY_NAME `
+  --resource-group $RESOURCE_GROUP `
+  --query id `
+  -o tsv
+)
+$USER_MANAGED_IDENTITY_PRINCIPAL_ID = (az identity show `
+  --name $USER_MANAGED_IDENTITY_NAME `
+  --resource-group $RESOURCE_GROUP `
+  --query principalId `
+  -o tsv
+)
+$USER_MANAGED_IDENTITY_CLIENT_ID = (az identity show `
+  --name $USER_MANAGED_IDENTITY_NAME `
+  --resource-group $RESOURCE_GROUP `
+  --query clientId `
+  -o tsv
+)
+
+# create key vault
+# TODO: add check if exists before delete/purge
+az keyvault delete --name $KEY_VAULT_NAME
+az keyvault purge --name $KEY_VAULT_NAME --location $REGION
+az keyvault create `
+  --name $KEY_VAULT_NAME `
+  --resource-group $RESOURCE_GROUP `
+  --location $REGION
+$KEY_VAULT_URI = (az keyvault show `
+  --name $KEY_VAULT_NAME `
+  --resource-group $RESOURCE_GROUP `
+  --query properties.vaultUri `
+  -o tsv
+)
+
+# assign
+az keyvault set-policy `
+  --name $KEY_VAULT_NAME `
+  --object-id $USER_MANAGED_IDENTITY_PRINCIPAL_ID `
+  --secret-permissions get set
 
 # create container registry
 Write-Host "Creating container registry..."
@@ -80,69 +131,95 @@ $LOG_ANALYTICS_WORKSPACE_KEY = ( `
     --query primarySharedKey `
     -o tsv
 )
-
 # tables
-# TODO: complete, deployment via Azure CLI is not working properly at the moment. therefore, a
-# manual configuration is required for now
 # see: https://learn.microsoft.com/en-us/azure/azure-monitor/logs/tutorial-logs-ingestion-portal
 Write-Host "Creating components required to log usage data in Log Analytics..."
-Write-Host "Please create a Data Collection Endpoint (DCE), Custom Log Analytics table '$LOG_ANALYTICS_USAGE_TABLE_NAME' and a Data Collection Rule (DCR) manually with the infos given in the contained readme."
-Read-Host "Press ENTER to confirm the completion"
+az monitor log-analytics workspace table create `
+  --resource-group $RESOURCE_GROUP `
+  --workspace-name $LOG_ANALYTICS_WORKSPACE_NAME `
+  --name "AzureOpenAIUsage_PP_CL" `
+  --retention-time $LOG_ANALYTICS_AOAIUSAGE_TABLE_RETENTION_TIME `
+  --columns `
+    TimeGenerated=datetime `
+    RequestStartMinute=string `
+    Client=string `
+    IsStreaming=boolean `
+    PromptTokens=int `
+    CompletionTokens=int `
+    TotalTokens=int `
+    OpenAIProcessingMS=real `
+    OpenAIRegion=string
+# data collection endpoint
+$DATA_COLLECTION_ENDPOINT_ID = (az monitor data-collection endpoint create `
+  --name $DATA_COLLECTION_ENDPOINT_NAME `
+  --resource-group $RESOURCE_GROUP `
+  --location $REGION `
+  --public-network-access "enabled" `
+  --query immutableId `
+  --output tsv `
+)
+$LOGS_INGESTION_ENDPOINT = (az monitor data-collection endpoint show `
+  --name $DATA_COLLECTION_ENDPOINT_NAME `
+  --resource-group $RESOURCE_GROUP `
+  --query logsIngestion.endpoint `
+  --output tsv `
+)
+# data collection rule
+$rule_file_path = "rule-file.json"
+Try {
+  Copy-Item -Path "rule-file.template.json" -Destination $rule_file_path
+  ((Get-Content $rule_file_path) -replace "##workspaceResourceId##", $LOG_ANALYTICS_WORKSPACE_ID) `
+    | Set-Content -Path $rule_file_path
+  ((Get-Content $rule_file_path) -replace "##dataCollectionEndpointId##", `
+      $DATA_COLLECTION_ENDPOINT_ID) | Set-Content -Path $rule_file_path
+  $DCR_IMMUTABLE_ID = (az monitor data-collection rule create `
+    --name "AzureOpenAIUsage_PP_CL" `
+    --resource-group $RESOURCE_GROUP `
+    --location $REGION `
+    --rule-file $rule_file_path `
+    --query immutableId `
+    --output tsv
+  )
+}
+Finally {
+  if (Test-Path $rule_file_path) {
+    Remove-Item $rule_file_path
+  }
+}
+# assign Monitoring Metrics Publisher role at data collection rule to user-managed identity
+$DCR_ID = (az monitor data-collection rule show `
+  --name "AzureOpenAIUsage_PP_CL" `
+  --resource-group $RESOURCE_GROUP `
+  --query id `
+  --output tsv
+)
+az role assignment create `
+  --assignee-object-id $USER_MANAGED_IDENTITY_PRINCIPAL_ID `
+  --assignee-principal-type ServicePrincipal `
+  --role "Monitoring Metrics Publisher" `
+  --scope $DCR_ID
 
-# az monitor log-analytics workspace table create `
-#   --resource-group $RESOURCE_GROUP `
-#   --workspace-name $LOG_ANALYTICS_WORKSPACE_NAME `
-#   --name $LOG_ANALYTICS_USAGE_TABLE_NAME `
-#   --columns `
-#     TimeGenerated=datetime `
-#     RequestStartMinute=string `
-#     Client=string `
-#     IsStreaming=boolean `
-#     PromptTokens=int `
-#     CompletionTokens=int `
-#     TotalTokens=int `
-#     OpenAIProcessingMS=real `
-#     OpenAIRegion=string
-# # data collection endpoint
-# $DATA_COLLECTION_ENDPOINT_ID = (az monitor data-collection endpoint create `
-#   --name $DATA_COLLECTION_ENDPOINT_NAME `
-#   --resource-group $RESOURCE_GROUP `
-#   --location $REGION `
-#   --public-network-access "enabled" `
-#   --query immutableId `
-#   --output tsv `
-# )
-# $LOGS_INGESTION_ENDPOINT = (az monitor data-collection endpoint show `
-#   --id $DATA_COLLECTION_ENDPOINT_ID `
-#   --query logsIngestion.endpoint `
-#   --output tsv `
-# )
-# # data collection rule
-# $rule_file_path = "rule-file.json"
-# Try {
-#   Copy-Item -Path "rule-file.template.json" -Destination $rule_file_path
-#   ((Get-Content $rule_file_path) -replace "##tableName##", $LOG_ANALYTICS_USAGE_TABLE_NAME) `
-#     | Set-Content -Path $rule_file_path
-#   ((Get-Content $rule_file_path) -replace "##workspaceResourceId##", $LOG_ANALYTICS_WORKSPACE_ID) `
-#     | Set-Content -Path $rule_file_path
-#   ((Get-Content $rule_file_path) -replace "##dataCollectionEndpointId##", $DATA_COLLECTION_ENDPOINT_ID) `
-#     | Set-Content -Path $rule_file_path
-#   $DCR_IMMUTABLE_ID = (az monitor data-collection rule create `
-#     --name $LOG_ANALYTICS_USAGE_TABLE_NAME `
-#     --resource-group $RESOURCE_GROUP `
-#     --location $REGION `
-#     --rule-file $rule_file_path `
-#     --query immutableId `
-#     --output tsv
-#   )
-# }
-# Finally {
-#   if (Test-Path $rule_file_path) {
-#     Remove-Item $rule_file_path
-#   }
-# }
-# # give permissions
-# # TODO: complete
+# set updated config string in key vault
+$config_string_for_key_vault_file_path = "config_string.temp.text"
+Try {
+  $config_string_for_key_vault = $CONFIG_STRING -replace '"user_assigned_managed_identity_client_id": ".*?"', `
+    """user_assigned_managed_identity_client_id"": ""$USER_MANAGED_IDENTITY_CLIENT_ID"""
+  $config_string_for_key_vault = $config_string_for_key_vault -replace '"log_ingestion_endpoint": ".*?"', `
+    """log_ingestion_endpoint"": ""$LOGS_INGESTION_ENDPOINT"""
+  $config_string_for_key_vault = $config_string_for_key_vault `
+    -replace '"data_collection_rule_id": ".*?"', `
+    """data_collection_rule_id"": ""$DCR_IMMUTABLE_ID"""
+  $config_string_for_key_vault | Set-Content -Path $config_string_for_key_vault_file_path
+  az keyvault secret set `
+    --vault-name $KEY_VAULT_NAME `
+    --name "config-string" `
+    --file $config_string_for_key_vault_file_path
+}
+Finally {
+  if (Test-Path $config_string_for_key_vault_file_path) {
+    Remove-Item $config_string_for_key_vault_file_path
+  }
+}
 
 # deploy container to Azure Container Apps
 # environment
@@ -154,7 +231,6 @@ az containerapp env create `
   --logs-workspace-id $LOG_ANALYTICS_WORKSPACE_CUSTOMER_ID `
   --logs-workspace-key $LOG_ANALYTICS_WORKSPACE_KEY
 # app incl. secrets and env vars
-# TODO: move config to Azure Key Vault
 az containerapp up `
   --name $CONTAINER_APP_NAME `
   --resource-group $RESOURCE_GROUP `
@@ -166,24 +242,20 @@ az containerapp up `
   --query properties.configuration.ingress.fqdn `
   --logs-workspace-id $LOG_ANALYTICS_WORKSPACE_CUSTOMER_ID `
   --logs-workspace-key $LOG_ANALYTICS_WORKSPACE_KEY
+# user-managed identity
+az containerapp identity assign `
+  --resource-group $RESOURCE_GROUP `
+  --name $CONTAINER_APP_NAME `
+  --user-assigned $USER_MANAGED_IDENTITY_NAME
 # secrets and env vars
 az containerapp secret set `
   --name $CONTAINER_APP_NAME `
   --resource-group $RESOURCE_GROUP `
-  --secrets `
-    "config-string=(not set)"
+  --secrets "config-string=keyvaultref:$($KEY_VAULT_URI)secrets/config-string,identityref:$USER_MANAGED_IDENTITY_ID"
 az containerapp update `
   --name $CONTAINER_APP_NAME `
   --resource-group $RESOURCE_GROUP `
-  --set-env-vars `
-    "POWERPROXY_CONFIG_STRING=secretref:config-string"
-
-# set env variable POWERPROXY_CONFIG_STRING manually to content of $CONFIG_STRING
-# notes: - this needs to be done manually as there is an issue with the Azure CLI currently
-#        - don't forget to restart to bring config changes into effect
-Write-Host "Please update the config-string secret in the Container App manually to contain '$CONFIG_STRING'."
-Write-Host "Note: this will be automated in future but needs an issue with the Azure CLI fixed first."
-Read-Host "Press ENTER to confirm the completion."
+  --set-env-vars "POWERPROXY_CONFIG_STRING=secretref:config-string"
 # restart active revisions to bring secrects and env vars into effect
 Write-Host "Restarting Container App to bring new secret value into effect..."
 az containerapp revision list `
@@ -195,6 +267,9 @@ az containerapp revision list `
     --resource-group $RESOURCE_GROUP `
     --revision $_
 }
+
+# deployed message
+Write-Host "PowerProxy is deployed. Enjoy!"
 
 # # cleanup
 # # explictly delete the Log Analytics workspace to delete contained data

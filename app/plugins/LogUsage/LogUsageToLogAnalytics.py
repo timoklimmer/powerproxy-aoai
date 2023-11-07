@@ -1,6 +1,6 @@
 """Declares a plugin to log usage infos to a CSV file."""
 
-from azure.identity import ChainedTokenCredential, ClientSecretCredential, ManagedIdentityCredential
+from azure.identity import ClientSecretCredential, ManagedIdentityCredential
 from azure.monitor.ingestion import LogsIngestionClient
 from helpers.config import Configuration
 from helpers.dicts import QueryDict
@@ -16,34 +16,60 @@ class LogUsageToLogAnalytics(LogUsageBase):
     credential_client_secret = None
     data_collection_rule_id = None
     stream_name = None
+    auth_mechanism = None
 
     log_analytics_client = None
 
-    def __init__(self, app_configuration, plugin_configuration: QueryDict):
+    def __init__(self, app_configuration: QueryDict, plugin_configuration: QueryDict):
         """Constructor."""
         super().__init__(app_configuration, plugin_configuration)
 
         self.log_ingestion_endpoint = plugin_configuration.get("log_ingestion_endpoint")
+        self.user_assigned_managed_identity_client_id = app_configuration.get(
+            "user_assigned_managed_identity_client_id"
+        )
         self.credential_tenant_id = plugin_configuration.get("credential_tenant_id")
         self.credential_client_id = plugin_configuration.get("credential_client_id")
         self.credential_client_secret = plugin_configuration.get("credential_client_secret")
+        self.auth_mechanism = (
+            "ClientSecretCredential"
+            if (
+                self.credential_tenant_id
+                and self.credential_client_id
+                and self.credential_client_secret
+            )
+            else "ManagedIdentityCredential"
+        )
         self.data_collection_rule_id = plugin_configuration.get("data_collection_rule_id")
-        self.stream_name = plugin_configuration.get("stream_name")
+        self.stream_name = "Custom-AzureOpenAIUsage_PP_CL"
 
     def on_plugin_instantiated(self):
         """Run directly after the new plugin instance has been instantiated."""
         super().on_plugin_instantiated()
 
+        # get credentials for Log Analytics client
+        credential = None
+        if self.auth_mechanism == "ClientSecretCredential":
+            credential = ClientSecretCredential(
+                tenant_id=self.credential_tenant_id,
+                client_id=self.credential_client_id,
+                client_secret=self.credential_client_secret,
+            )
+        elif (
+            self.auth_mechanism == "ManagedIdentityCredential"
+            and self.user_assigned_managed_identity_client_id
+        ):
+            credential = ManagedIdentityCredential(
+                client_id=self.user_assigned_managed_identity_client_id
+            )
+
+        else:
+            credential = ManagedIdentityCredential()
+
+        # get Log Analytics client
         self.log_analytics_client = LogsIngestionClient(
             endpoint=self.log_ingestion_endpoint,
-            credential=ChainedTokenCredential(
-                ManagedIdentityCredential(),
-                ClientSecretCredential(
-                    tenant_id=self.credential_tenant_id,
-                    client_id=self.credential_client_id,
-                    client_secret=self.credential_client_secret,
-                ),
-            ),
+            credential=credential,
             logging_enable=True,
         )
 
@@ -52,10 +78,19 @@ class LogUsageToLogAnalytics(LogUsageBase):
         super().on_print_configuration()
 
         Configuration.print_setting("Log ingestion endpoint", self.log_ingestion_endpoint, 1)
-        Configuration.print_setting("Credential Tenant ID", self.credential_tenant_id, 1)
-        Configuration.print_setting("Credential Client ID", self.credential_client_id, 1)
+        Configuration.print_setting("Authentication mechanism", self.auth_mechanism)
+        if self.auth_mechanism == "ClientSecretCredential":
+            Configuration.print_setting("Credential Tenant ID", self.credential_tenant_id, 1)
+            Configuration.print_setting("Credential Client ID", self.credential_client_id, 1)
+        if (
+            self.auth_mechanism == "ManagedIdentityCredential"
+            and self.user_assigned_managed_identity_client_id
+        ):
+            Configuration.print_setting(
+                "User-Assigned Managed Credential ID",
+                self.user_assigned_managed_identity_client_id,
+            )
         Configuration.print_setting("Data Collection Rule ID", self.data_collection_rule_id, 1)
-        Configuration.print_setting("Stream Name", self.stream_name, 1)
 
     def _append_line(
         self,

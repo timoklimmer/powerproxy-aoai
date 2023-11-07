@@ -101,20 +101,8 @@ make sure it contains the right settings for your cloud environment.
 completed, your proxy should be up and running.
 
 ### Log Analytics
-If usage data is to be logged to Log Analytics, a proper Log Analytics workspace is required.
-"Proper" in this case means:
-- a Log Analytics workspace (recommendation: use your own for better manageability)
-- a custom table named `AzureOpenAIUsage_CL` in the Log Analytics
-- a Data Collection Endpoint (DCE)
-- a Data Collection Rule (DCR) running on the provided DCE
-- either a Service Principal or a Managed Identity for the host
-- the `Monitoring Metrics Publisher` role added to the Service Principal or Managed Identity
-
-See the tutorial at https://learn.microsoft.com/en-us/azure/azure-monitor/logs/tutorial-logs-ingestion-portal
-and follow the described steps there.
-
-- As example JSON, you can use `sample_logs_for_log_analytics.json` file included in this repo.
-- For the KQL query, you can use the query provided in the `dcr_transform.kql` file.
+Log Analytics is now deployed by the contained deployment script. There is no need for taking extra
+steps any more.
 
 ## Known Issues
 - Due to limitations by OpenAI, the exact number of consumed tokens is not available when requests
