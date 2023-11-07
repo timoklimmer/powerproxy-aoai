@@ -78,7 +78,8 @@ class LogUsageToLogAnalytics(LogUsageBase):
         super().on_print_configuration()
 
         Configuration.print_setting("Log ingestion endpoint", self.log_ingestion_endpoint, 1)
-        Configuration.print_setting("Authentication mechanism", self.auth_mechanism)
+        Configuration.print_setting("Data Collection Rule ID", self.data_collection_rule_id, 1)
+        Configuration.print_setting("Authentication mechanism", self.auth_mechanism, 1)
         if self.auth_mechanism == "ClientSecretCredential":
             Configuration.print_setting("Credential Tenant ID", self.credential_tenant_id, 1)
             Configuration.print_setting("Credential Client ID", self.credential_client_id, 1)
@@ -90,7 +91,6 @@ class LogUsageToLogAnalytics(LogUsageBase):
                 "User-Assigned Managed Credential ID",
                 self.user_assigned_managed_identity_client_id,
             )
-        Configuration.print_setting("Data Collection Rule ID", self.data_collection_rule_id, 1)
 
     def _append_line(
         self,
