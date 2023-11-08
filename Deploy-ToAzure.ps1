@@ -1,13 +1,43 @@
-# Deploys a PowerProxy for Azure OpenAI to Azure
+<#
+.SYNOPSIS
+Deploys a PowerProxy for Azure OpenAI instance to Azure.
 
-#  - either run this as complete script or use VS.Code PowerShell extension to run individual code
-#    blocks (by selecting code and pressing F8)
-#  - before running the script, make sure that you have a proper config file at
-#    config/config.azure.yaml
-#  - PowerShell version should be 7+.
-#  - Will be migrated to Terraform in future.
+.DESCRIPTION
+Creates several resources in an Azure resource group and deploys PowerProxy as a Container App,
+based on the given configuration file.
+
+.PARAMETER ConfigFile
+Path to the config file to use.
+
+.EXAMPLE
+PS> .\Deploy-To-Azure.ps1 -ConfigFile config/config.azure.yaml
+
+Deploys PowerProxy using the config file at "config/config.azure.yaml".
+
+.LINK
+GitHub repo: https://github.com/timoklimmer/powerproxy-aoai
+
+.NOTES
+There is an example config file at 'config/config.example.yaml'. You can use this file as starting
+point for creating your own file.
+
+If you want to run the deployment file step-by-step, you can use the PowerShell extension in VS.Code
+and run individual code blocks by selecting them and pressing F8.
+
+PowerShell version should be 7+.
+#>
+param(
+  [Parameter(mandatory=$true)]
+  [string] $ConfigFile
+)
+
+#---------------------------------------[Initialisation]--------------------------------------------
 
 $ErrorActionPreference = "Stop"
+
+if(-Not (Test-Path $ConfigFile)) {
+  throw "The given config file does not exist. Ensure that you pass a valid path to a valid config file."
+}
 
 # register required namespaces in subscription if not done yet (required only once per subscription)
 az provider register --namespace Microsoft.App
@@ -17,8 +47,7 @@ az extension add -n containerapp
 az extension add -n monitor-control-service
 
 # configuration
-$CONFIG_FILE = "config/config.azure.yaml"
-$CONFIG_STRING = (python config/to_json_string.py --yaml-file $CONFIG_FILE)
+$CONFIG_STRING = (python config/to_json_string.py --yaml-file $ConfigFile)
 $CONFIG = $CONFIG_STRING | ConvertFrom-Json
 $SUBSCRIPTION_ID = $CONFIG.azure_subscription_id
 $RESOURCE_GROUP = $CONFIG.resource_group
@@ -42,6 +71,8 @@ $USER_MANAGED_IDENTITY_NAME = "${UNIQUE_PREFIX}powerproxyaoai"
 if ($NULL -ne $SUBSCRIPTION_ID) {
   az account set -s $SUBSCRIPTION_ID
 }
+
+#--------------------------------------[Create assets]----------------------------------------------
 
 # create resource group
 Write-Host "Creating resource group..."
@@ -105,7 +136,6 @@ az acr build `
 
 # create log analytics workspace, tables, data collection endpoint and rules
 # workspace
-# notes: uses default retention time of workspace, change retention time if needed
 Write-Host "Creating Log Analytics workspace..."
 az monitor log-analytics workspace create `
   --resource-group $RESOURCE_GROUP `
@@ -268,10 +298,12 @@ az containerapp revision list `
     --revision $_
 }
 
+#-----------------------------------------[Done Message]--------------------------------------------
 # deployed message
+# TODO: print out URL to PowerProxy
 Write-Host "PowerProxy is deployed. Enjoy!"
 
-# # cleanup
+#--------------------------------------------[Cleanup]----------------------------------------------
 # # explictly delete the Log Analytics workspace to delete contained data
 # az monitor log-analytics workspace delete `
 #   --resource-group $RESOURCE_GROUP `

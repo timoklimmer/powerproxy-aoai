@@ -97,8 +97,9 @@ To deploy to Azure:
 1. Deploy to your local machine.
 2. Create a `config.azure.yaml` file similar to the `config.local.yaml` file you created before and
 make sure it contains the right settings for your cloud environment.
-3. Run the `deploy-to-azure.ps1` script in PowerShell. Once the deployment script has successfully
-completed, your proxy should be up and running.
+3. Run the `Deploy-ToAzure.ps1` script in PowerShell, passing your `config.azure.yaml` config file
+as `-ConfigFile` argument. For example: `.\Deploy-ToAzure.ps1 -ConfigFile config/config.azure.yaml`
+Once the deployment script has successfully completed, your proxy should be up and running.
 
 ### Log Analytics
 Log Analytics is now deployed by the contained deployment script. There is no need for taking extra
