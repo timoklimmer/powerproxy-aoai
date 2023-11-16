@@ -292,7 +292,7 @@ az containerapp revision list `
   --name $CONTAINER_APP_NAME `
   --resource-group $RESOURCE_GROUP `
   --query "[?properties.active].name" -o tsv | ForEach-Object {
-  az containerapp revision restart `
+az containerapp revision restart `
     --name $CONTAINER_APP_NAME `
     --resource-group $RESOURCE_GROUP `
     --revision $_
@@ -300,8 +300,17 @@ az containerapp revision list `
 
 #-----------------------------------------[Done Message]--------------------------------------------
 # deployed message
-# TODO: print out URL to PowerProxy
-Write-Host "PowerProxy is deployed. Enjoy!"
+$POWERPROXY_URL = "https://$(`
+  az containerapp show `
+    --name $CONTAINER_APP_NAME `
+    --resource-group $RESOURCE_GROUP `
+    --query properties.configuration.ingress.fqdn `
+    -o tsv `
+)"
+Write-Host "🎉 PowerProxy has been deployed successfully and is ready to serve requests."
+Write-Host "Endpoint      : $POWERPROXY_URL"
+Write-Host "Liveness test : $POWERPROXY_URL/powerproxy/health/liveness"
+Write-Host "Enjoy!"
 
 #--------------------------------------------[Cleanup]----------------------------------------------
 # # explictly delete the Log Analytics workspace to delete contained data
