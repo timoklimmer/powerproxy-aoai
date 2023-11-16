@@ -24,7 +24,7 @@ point for creating your own file.
 If you want to run the deployment file step-by-step, you can use the PowerShell extension in VS.Code
 and run individual code blocks by selecting them and pressing F8.
 
-PowerShell version should be 7+.
+PowerShell version should be 7+. Also make sure your Azure CLI installation is up-to-date.
 #>
 param(
   [Parameter(mandatory=$true)]
@@ -43,7 +43,6 @@ if(-Not (Test-Path $ConfigFile)) {
 az provider register --namespace Microsoft.App
 az provider register --namespace Microsoft.OperationalInsights
 # ensure that the Azure CLI has the required extensions installed (required only once per machine)
-az extension add -n containerapp
 az extension add -n monitor-control-service
 
 # configuration
