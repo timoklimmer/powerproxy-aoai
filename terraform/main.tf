@@ -1,7 +1,8 @@
 locals {
   # Replace all non alpha numeric characters by dashes
-  github_branch_name_sanitized = replace(var.github_branch_name, "/[^a-zA-Z0-9]/", "-")
-  logs_table_name              = "AzureOpenAIUsage_CL"
+  github_branch_name_sanitized         = replace(var.github_branch_name, "/[^a-zA-Z0-9]/", "-")
+  logs_table_name                      = "AzureOpenAIUsage_CL"
+  archive_container_registry_task_path = "${path.root}/.acr-terraform.tar.gz"
 
   tags = {
     app        = "PowerProxy"
@@ -187,6 +188,12 @@ resource "azurerm_container_registry" "this" {
   tags = local.tags
 }
 
+resource "null_resource" "archive_container_registry_task" {
+  provisioner "local-exec" {
+    command = "tar -czvf ${local.archive_container_registry_task_path} ${path.root}"
+  }
+}
+
 resource "azurerm_container_registry_task" "this" {
   name                  = "powerproxy-${local.github_branch_name_sanitized}"
   container_registry_id = azurerm_container_registry.this.id
@@ -196,28 +203,8 @@ resource "azurerm_container_registry_task" "this" {
     os           = "Linux"
   }
 
-  docker_step {
-    context_access_token = var.github_token
-    context_path         = "${var.github_clone_url}#${var.github_branch_name}"
-    dockerfile_path      = "Dockerfile"
-
-    image_names = [
-      "powerproxy:${local.github_branch_name_sanitized}",
-      "powerproxy:sha-{{.Run.Commit}}",
-    ]
-  }
-
-  source_trigger {
-    branch         = local.github_branch_name_sanitized
-    events         = ["commit", "pullrequest"]
-    name           = "sources"
-    repository_url = "https://github.com/timoklimmer/powerproxy-aoai"
-    source_type    = "Github"
-
-    authentication {
-      token      = var.github_token
-      token_type = "PAT"
-    }
+  file_step {
+    task_file_path = local.archive_container_registry_task_path
   }
 
   base_image_trigger {
@@ -225,7 +212,8 @@ resource "azurerm_container_registry_task" "this" {
     type = "All"
   }
 
-  tags = local.tags
+  tags       = local.tags
+  depends_on = [null_resource.archive_container_registry_task]
 }
 
 resource "azurerm_container_registry_task_schedule_run_now" "this" {

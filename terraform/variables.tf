@@ -16,11 +16,6 @@ variable "region_id" {
   description = "Region name to deploy all resources"
 }
 
-variable "github_token" {
-  description = "Personal Access Token (PAT) to pull sources code from GitHub"
-  sensitive   = true
-}
-
 variable "github_clone_url" {
   default     = "https://github.com/timoklimmer/powerproxy-aoai.git"
   description = "Git URL to pull sources code from GitHub"
