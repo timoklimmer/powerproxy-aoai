@@ -14,6 +14,12 @@
 terraform init
 ```
 
+### lint
+
+```pwsh
+terraform fmt
+```
+
 ### upgrade
 
 ```pwsh
