@@ -98,10 +98,13 @@ $USER_MANAGED_IDENTITY_CLIENT_ID = (az identity show `
   -o tsv
 )
 
-# create key vault
-# TODO: add check if exists before delete/purge
-az keyvault delete --name $KEY_VAULT_NAME
-az keyvault purge --name $KEY_VAULT_NAME --location $REGION
+# create key vault (deleting/purging if pre-exists)
+if ($(az keyvault list --query [?name==``$KEY_VAULT_NAME``] -g $RESOURCE_GROUP -o tsv)) {
+  az keyvault delete --name $KEY_VAULT_NAME
+}
+if ($(az keyvault list-deleted --query [?name==``$KEY_VAULT_NAME``] -o tsv)) {
+  az keyvault purge --name $KEY_VAULT_NAME --location $REGION
+}
 az keyvault create `
   --name $KEY_VAULT_NAME `
   --resource-group $RESOURCE_GROUP `
