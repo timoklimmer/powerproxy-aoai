@@ -166,7 +166,8 @@ async def handle_request(request: Request, path: str):
         client = config.key_client_map[headers["api-key"]] if client is None else client
         headers["api-key"] = config["aoai/key"] or ""
     routing_slip["client"] = client
-    foreach_plugin(config.plugins, "on_client_identified", routing_slip)
+    if client:
+        foreach_plugin(config.plugins, "on_client_identified", routing_slip)
 
     # forward request to target endpoint and get response
     aoai_response: httpx.Response = await app.state.target_client.request(
