@@ -301,7 +301,6 @@ resource "azurerm_container_app" "this" {
             name                    = "LogUsageToLogAnalytics",
             data_collection_rule_id = azurerm_monitor_data_collection_rule.logs.name
             log_ingestion_endpoint  = azurerm_monitor_data_collection_endpoint.logs.logs_ingestion_endpoint
-            stream_name             = [for i in azurerm_monitor_data_collection_rule.logs.stream_declaration : i][0].stream_name
           }
         ]
       },
