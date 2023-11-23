@@ -1,5 +1,10 @@
+# TODO: update config with values from resources created during deployment, see PowerShell
+#       deployment script.
+
+# TODO: add Key Vault, see PowerShell deployment script
+
 locals {
-  # Replace all non alpha numeric characters by dashes
+    # TODO: refactor to remove GitHub
   github_branch_name_sanitized         = replace(var.github_branch_name, "/[^a-zA-Z0-9]/", "-")
   logs_table_name                      = "AzureOpenAIUsage_CL"
   archive_container_registry_task_path = "${path.root}/.acr-terraform.tar.gz"
