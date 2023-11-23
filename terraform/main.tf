@@ -256,7 +256,7 @@ resource "azurerm_container_app" "this" {
       liveness_probe {
         initial_delay    = 5
         interval_seconds = 5
-        path             = "/health/liveness"
+        path             = "/powerproxy/health/liveness"
         port             = 8000
         transport        = "HTTP"
       }
