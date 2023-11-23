@@ -52,22 +52,23 @@ resource "azurerm_role_assignment" "log_analytics_workspace_metrics_publisher" {
   scope                = azurerm_log_analytics_workspace.this.id
 }
 
-resource "azurerm_application_insights" "this" {
-  location            = azurerm_resource_group.this.location
-  name                = var.resource_prefix
-  resource_group_name = azurerm_resource_group.this.name
+# TODO: clarify App Insights support, skip for now
+# resource "azurerm_application_insights" "this" {
+#   location            = azurerm_resource_group.this.location
+#   name                = var.resource_prefix
+#   resource_group_name = azurerm_resource_group.this.name
 
-  application_type = "web"
-  workspace_id     = azurerm_log_analytics_workspace.this.id
+#   application_type = "web"
+#   workspace_id     = azurerm_log_analytics_workspace.this.id
 
-  tags = local.tags
-}
+#   tags = local.tags
+# }
 
-resource "azurerm_role_assignment" "application_insights_metrics_publisher" {
-  principal_id         = azurerm_user_assigned_identity.this.principal_id
-  role_definition_name = "Monitoring Metrics Publisher"
-  scope                = azurerm_application_insights.this.id
-}
+# resource "azurerm_role_assignment" "application_insights_metrics_publisher" {
+#   principal_id         = azurerm_user_assigned_identity.this.principal_id
+#   role_definition_name = "Monitoring Metrics Publisher"
+#   scope                = azurerm_application_insights.this.id
+# }
 
 resource "azurerm_monitor_data_collection_endpoint" "logs" {
   location            = azurerm_resource_group.this.location
@@ -245,6 +246,7 @@ resource "azurerm_container_app_environment" "this" {
 }
 
 // TODO: Add custom scaling rules based on CPU/RAM/requests, TDB. Feature is not yet available in the Terraform provider. See: https://github.com/hashicorp/terraform-provider-azurerm/issues/21207.
+# TODO: consider using default scaling rules
 resource "azurerm_container_app" "this" {
   container_app_environment_id = azurerm_container_app_environment.this.id
   name                         = "powerproxy"
@@ -336,7 +338,8 @@ resource "azurerm_container_app" "this" {
 
   depends_on = [
     azurerm_container_registry_task_schedule_run_now.this,
-    azurerm_role_assignment.application_insights_metrics_publisher,
+    # TODO: re-enable once more clarity on App Insights
+    #azurerm_role_assignment.application_insights_metrics_publisher,
     azurerm_role_assignment.container_registry_pull,
     azurerm_role_assignment.monitor_data_collection_rule_metrics_publisher,
   ]
