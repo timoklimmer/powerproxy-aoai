@@ -8,6 +8,7 @@ locals {
     app        = "PowerProxy"
     managed_by = "Terraform"
     sources    = "https://github.com/timoklimmer/powerproxy-aoai"
+    # TODO: use version app/version.py
     version    = var.github_branch_name
   }
 }
@@ -34,7 +35,7 @@ resource "azurerm_log_analytics_workspace" "this" {
   name                = var.resource_prefix
   resource_group_name = azurerm_resource_group.this.name
 
-  retention_in_days = 30
+  retention_in_days = 90
   sku               = "PerGB2018"
 
   tags = local.tags
