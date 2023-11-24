@@ -1,14 +1,15 @@
 """Script to test the proxy's ability to support response streaming when functions are used."""
 
-import openai
+from openai import AzureOpenAI
 
-openai.api_type = "azure"
-openai.api_base = "http://localhost"
-openai.api_version = "2023-07-01-preview"
-openai.api_key = "04ae14bc78184621d37f1ce57a52eb7"
+client = AzureOpenAI(
+    azure_endpoint="http://localhost",
+    api_version="2023-07-01-preview",
+    api_key="04ae14bc78184621d37f1ce57a52eb7",
+)
 
-response = openai.ChatCompletion.create(
-    engine="gpt-35-turbo-0613",
+chat_completions_request = client.chat.completions.create(
+    model="gpt-35-turbo",
     messages=[
         {
             "role": "user",
@@ -44,4 +45,4 @@ response = openai.ChatCompletion.create(
     stream=False,
 )
 
-print(response)
+print(chat_completions_request.choices[0].message.function_call)

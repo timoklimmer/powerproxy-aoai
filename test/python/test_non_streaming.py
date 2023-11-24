@@ -1,14 +1,15 @@
 """Script to test the proxy's support for requests responding with a one-time response."""
 
-import openai
+from openai import AzureOpenAI
 
-openai.api_type = "azure"
-openai.api_base = "http://localhost"
-openai.api_version = "2023-03-15-preview"
-openai.api_key = "04ae14bc78184621d37f1ce57a52eb7"
+client = AzureOpenAI(
+    azure_endpoint="http://localhost",
+    api_version="2023-03-15-preview",
+    api_key="04ae14bc78184621d37f1ce57a52eb7",
+)
 
-response = openai.ChatCompletion.create(
-    engine="gpt-35-turbo",
+chat_completions_request = client.chat.completions.create(
+    model="gpt-35-turbo",
     messages=[
         {
             "role": "system",
@@ -30,6 +31,4 @@ response = openai.ChatCompletion.create(
     stream=False,
 )
 
-print(response)
-
-print("")
+print(chat_completions_request.choices[0].message.content)
