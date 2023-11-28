@@ -105,6 +105,11 @@ Once the deployment script has successfully completed, your proxy should be up a
 Log Analytics is now deployed by the contained deployment script. There is no need for taking extra
 steps any more.
 
+### Configuration updates
+To update the configuration of an existing deployment, you can use the `Export-ConfigFromAzure.ps1`
+and `Import-ConfigFromAzure.ps1` scripts. First, export the config to a local YAML file, then edit
+the file, and afterwards import it into Azure again.
+
 ## Known Issues
 - Due to limitations by OpenAI, the exact number of consumed tokens is not available when requests
 ask for a streaming response. In that case, an approximation based on code provided by OpenAI is
