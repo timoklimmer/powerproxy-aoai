@@ -46,8 +46,8 @@ az provider register --namespace Microsoft.OperationalInsights
 az extension add -n monitor-control-service
 
 # configuration
-$CONFIG_STRING = (python config/to_json_string.py --yaml-file $ConfigFile)
-$CONFIG = $CONFIG_STRING | ConvertFrom-Json
+$CONFIG_YAML_STRING = (Get-Content -Path $ConfigFile -Raw)
+$CONFIG = (python config/to_json_string.py --yaml-file $ConfigFile) | ConvertFrom-Json
 $SUBSCRIPTION_ID = $CONFIG.azure_subscription_id
 $RESOURCE_GROUP = $CONFIG.resource_group
 $REGION = $CONFIG.region
@@ -165,7 +165,7 @@ $LOG_ANALYTICS_WORKSPACE_KEY = ( `
 )
 # tables
 # see: https://learn.microsoft.com/en-us/azure/azure-monitor/logs/tutorial-logs-ingestion-portal
-Write-Host "Creating components required to log usage data in Log Analytics..."
+Write-Host "Creating components required to log usage data to Log Analytics..."
 az monitor log-analytics workspace table create `
   --resource-group $RESOURCE_GROUP `
   --workspace-name $LOG_ANALYTICS_WORKSPACE_NAME `
@@ -232,24 +232,33 @@ az role assignment create `
   --scope $DCR_ID
 
 # set updated config string in key vault
-$config_string_for_key_vault_file_path = "config_string.temp.text"
+$temp_config_yaml_path = "config.temp.a9f8f42.yaml"
 Try {
-  $config_string_for_key_vault = $CONFIG_STRING -replace '"user_assigned_managed_identity_client_id": ".*?"', `
-    """user_assigned_managed_identity_client_id"": ""$USER_MANAGED_IDENTITY_CLIENT_ID"""
-  $config_string_for_key_vault = $config_string_for_key_vault -replace '"log_ingestion_endpoint": ".*?"', `
-    """log_ingestion_endpoint"": ""$LOGS_INGESTION_ENDPOINT"""
-  $config_string_for_key_vault = $config_string_for_key_vault `
-    -replace '"data_collection_rule_id": ".*?"', `
-    """data_collection_rule_id"": ""$DCR_IMMUTABLE_ID"""
-  $config_string_for_key_vault | Set-Content -Path $config_string_for_key_vault_file_path
+  #--  update values in temp config
+  $new_yaml_config_string = $CONFIG_YAML_STRING
+  # user_assigned_managed_identity_client_id
+  $new_yaml_config_string = ($new_yaml_config_string `
+    -replace "(?m)(?<=^\s*user_assigned_managed_identity_client_id\s*:\s+).*$", `
+    $USER_MANAGED_IDENTITY_CLIENT_ID)
+  # log_ingestion_endpoint
+  $new_yaml_config_string = ($new_yaml_config_string `
+    -replace "(?m)(?<=^\s*log_ingestion_endpoint\s*:\s+).*$", `
+    $LOGS_INGESTION_ENDPOINT)
+  # data_collection_rule_id
+  $new_yaml_config_string = ($new_yaml_config_string `
+    -replace "(?m)(?<=^\s*data_collection_rule_id\s*:\s+).*$", `
+    $DCR_IMMUTABLE_ID)
+
+  #-- write to file and set secret in Key Vault
+  $new_yaml_config_string | Set-Content -Path $temp_config_yaml_path
   az keyvault secret set `
     --vault-name $KEY_VAULT_NAME `
     --name "config-string" `
-    --file $config_string_for_key_vault_file_path
+    --file $temp_config_yaml_path
 }
 Finally {
-  if (Test-Path $config_string_for_key_vault_file_path) {
-    Remove-Item $config_string_for_key_vault_file_path
+  if (Test-Path $temp_config_yaml_path) {
+    Remove-Item $temp_config_yaml_path
   }
 }
 

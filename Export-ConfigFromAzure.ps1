@@ -9,9 +9,9 @@ Writes a PowerProxy's configuration from the given Key Vault to the given file.
 Name of the Key Vault in which the configuration is stored.
 
 .EXAMPLE
-PS> .\Export-ConfigFromAzure.ps1 -KeyVaultName abdefpowerproxyaoai -ToFile powerproxy.config.json
+PS> .\Export-ConfigFromAzure.ps1 -KeyVaultName abdefpowerproxyaoai -ToFile production.config.yaml
 
-Exports the PowerProxy config from Key Vault 'abdefpowerproxyaoai' to JSON file 'powerproxy.config.json'.
+Exports the PowerProxy config from Key Vault 'abdefpowerproxyaoai' to file 'production.config.yaml'.
 
 .LINK
 GitHub repo: https://github.com/timoklimmer/powerproxy-aoai

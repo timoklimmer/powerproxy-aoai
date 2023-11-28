@@ -34,12 +34,6 @@ parser.add_argument(
     type=str,
     help="Name of the environment variable containing the configuration as JSON string.",
 )
-# --config-string
-parser.add_argument(
-    "--config-string",
-    type=str,
-    help="String containing the configuration as JSON string.",
-)
 # --port
 parser.add_argument(
     "--port",

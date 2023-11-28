@@ -1,6 +1,5 @@
 """Several methods and classes around configuration."""
 
-import json
 import os
 
 import yaml
@@ -68,26 +67,21 @@ class Configuration:
             return Configuration(yaml.safe_load(file))
 
     @staticmethod
-    def from_json_string(json_string):
-        """Load configuration from JSON string."""
-        try:
-            config_dict = json.loads(json_string)
-        except ValueError as exception:
-            raise ValueError(
-                (f"The provided config string '{json_string}' is not a valid JSON document.")
-            ) from exception
-        return Configuration(config_dict)
+    def from_yaml_string(yaml_string):
+        """Load configuration from YAML string."""
+        return Configuration(yaml.safe_load(yaml_string))
 
     @staticmethod
     def from_env_var(env_var_name="POWERPROXY_CONFIG_STRING", skip_no_env_var_exception=False):
         """Load configuration from environment variable."""
         if env_var_name in os.environ:
-            return Configuration.from_json_string(os.environ[env_var_name])
+            return Configuration.from_yaml_string(os.environ[env_var_name])
         if not skip_no_env_var_exception:
             raise ValueError(
                 f"Cannot load configuration from environment variable '{env_var_name}' because it "
                 f"does not exist."
             )
+        return None
 
     @staticmethod
     def from_args(args):
@@ -104,8 +98,6 @@ class Configuration:
                     "contain the configuration for PowerProxy, does not exist."
                 )
             )
-        elif args.config_string:
-            result = Configuration.from_json_string(args.config_string)
         elif "POWERPROXY_CONFIG_STRING" in os.environ:
             result = Configuration.from_env_var(
                 "POWERPROXY_CONFIG_STRING", skip_no_env_var_exception=True
@@ -114,9 +106,9 @@ class Configuration:
             raise ValueError(
                 (
                     "No configuration provided. Ensure that you pass in a valid configuration "
-                    "either by using argument '--config-file', '-config-env-var', or "
-                    "'--config-string' or provide a valid config string in env variable named "
-                    "'POWERPROXY_CONFIG_STRING' (in single-line JSON format)."
+                    "either by using argument '--config-file' or '-config-env-var', or provide a "
+                    "valid config string in env variable named 'POWERPROXY_CONFIG_STRING' "
+                    "(in YAML format)."
                 )
             )
         return result
