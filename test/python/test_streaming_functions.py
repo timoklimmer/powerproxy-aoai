@@ -8,7 +8,7 @@ client = AzureOpenAI(
     api_key="72bd81ef32763530b29e3da63d46ad6",
 )
 
-chat_completions_request = client.chat.completions.create(
+response = client.chat.completions.create(
     model="gpt-35-turbo",
     messages=[
         {
@@ -45,5 +45,7 @@ chat_completions_request = client.chat.completions.create(
     stream=True,
 )
 
-for line in chat_completions_request.response.iter_lines():
-    print(line)
+# pylint: disable=not-an-iterable
+for chunk in response:
+    # pylint: enable=not-an-iterable
+    print(chunk)

@@ -1,6 +1,7 @@
 """Script to test the proxy's ability to support response streaming."""
 
 from openai import AzureOpenAI
+from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
 
 client = AzureOpenAI(
     azure_endpoint="http://localhost",
@@ -8,7 +9,7 @@ client = AzureOpenAI(
     api_key="72bd81ef32763530b29e3da63d46ad6",
 )
 
-chat_completions_request = client.chat.completions.create(
+response = client.chat.completions.create(
     model="gpt-35-turbo",
     messages=[
         {
@@ -31,5 +32,11 @@ chat_completions_request = client.chat.completions.create(
     stream=True,
 )
 
-for line in chat_completions_request.response.iter_lines():
-    print(line)
+# pylint: disable=not-an-iterable
+for chunk in response:
+    # pylint: enable=not-an-iterable
+    chunk: ChatCompletionChunk
+    if len(chunk.choices) > 0:
+        choice = chunk.choices[0]
+        if choice.finish_reason != "stop" and choice.delta and choice.delta.content:
+            print(choice.delta.content, end="", flush=True)

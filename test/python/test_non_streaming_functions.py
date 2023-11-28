@@ -8,7 +8,7 @@ client = AzureOpenAI(
     api_key="04ae14bc78184621d37f1ce57a52eb7",
 )
 
-chat_completions_request = client.chat.completions.create(
+response = client.chat.completions.create(
     model="gpt-35-turbo",
     messages=[
         {
@@ -45,4 +45,4 @@ chat_completions_request = client.chat.completions.create(
     stream=False,
 )
 
-print(chat_completions_request.choices[0].message.function_call)
+print(response.choices[0].message.function_call)
