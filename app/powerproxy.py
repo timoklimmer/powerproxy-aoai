@@ -7,9 +7,9 @@ PowerProxy for AOAI - reverse proxy to process requests and responses to/from Az
 
 import argparse
 import asyncio
-from contextlib import asynccontextmanager
 import io
 import json
+from contextlib import asynccontextmanager
 
 import httpx
 import uvicorn
