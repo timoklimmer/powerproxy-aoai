@@ -7,9 +7,12 @@ PowerProxy for AOAI - reverse proxy to process requests and responses to/from Az
 
 import argparse
 import asyncio
+import datetime
 import io
 import json
 from contextlib import asynccontextmanager
+from datetime import datetime
+from timeit import default_timer as timer
 
 import httpx
 import uvicorn
@@ -57,11 +60,12 @@ async def lifespan(app: FastAPI):
     # startup
     # print header and config values
     print_header(f"PowerProxy for Azure OpenAI - v{VERSION}")
-    Configuration.print_setting("Proxy port", args.port)
+    Configuration.print_setting("Proxy runs at port", args.port)
     config.print()
     foreach_plugin(config.plugins, "on_print_configuration")
 
-    # instantiate HTTP client for AOAI endpoint
+    # collect AOAI endpoints and corresponding clients
+    app.state.aoai_endpoints = {}
     if config.get("aoai/mock_response"):
 
         async def get_mock_response(request):
@@ -71,13 +75,31 @@ async def lifespan(app: FastAPI):
                 await asyncio.sleep(ms_to_wait_before_return / 1_000)
             return httpx.Response(200, json=config.get("aoai/mock_response/json"))
 
-        app.state.target_client: httpx.AsyncClient = httpx.AsyncClient(
-            base_url="https://mock/",
-            transport=httpx.MockTransport(get_mock_response),
-        )
+        app.state.aoai_endpoints["mock"] = {
+            "Mock client": {
+                "url": "",
+                "key": "",
+                "client": httpx.AsyncClient(
+                    base_url="https://mock/",
+                    transport=httpx.MockTransport(get_mock_response),
+                ),
+            }
+        }
     else:
-        app.state.target_client: httpx.AsyncClient = httpx.AsyncClient(
-            base_url=config["aoai/endpoint"]
+        app.state.aoai_endpoints = {
+            endpoint["name"]: {
+                "url": endpoint["url"],
+                "key": endpoint["key"],
+                "client": httpx.AsyncClient(base_url=endpoint["url"]),
+            }
+            for endpoint in config["aoai/endpoints"]
+        }
+    if len(app.state.aoai_endpoints) == 0:
+        raise ValueError(
+            (
+                "Missing endpoints for Azure OpenAI. Ensure that at least one endpoint for Azure "
+                "OpenAI or a mock response is configured in PowerProxy's configuration."
+            )
         )
 
     # print serve notification
@@ -89,7 +111,9 @@ async def lifespan(app: FastAPI):
     yield
 
     # shutdown
-    await app.state.target_client.aclose()
+    # close AOAI endpoint connections
+    for aoai_endpoint_name in app.state.aoai_endpoints:
+        await app.state.aoai_endpoints[aoai_endpoint_name].aclose()
 
 
 ## define and run proxy app
@@ -125,14 +149,15 @@ async def handle_request(request: Request, path: str):
     routing_slip = {
         "incoming_request": request,
         "incoming_request_body": await request.body(),
+        "request_received_utc": datetime.utcnow(),
     }
     foreach_plugin(config.plugins, "on_new_request_received", routing_slip)
 
     # identify client and replace API key if needed
     # notes: - When API authentication is used, we get an API key in header 'api-key'. This
     #          would usually be the API key for Azure Open AI, but we configure and use
-    #          client-specific keys here for the proxy to identify the client and replace the
-    #          API key against the real AOAI key afterwards.
+    #          client-specific keys here for the proxy to identify the client. We will replace the
+    #          API key against the real AOAI key later.
     #        - For Azure AD authentication, we should get no API key but an Azure AD token in
     #          header 'Authorization'. Unfortunately, we cannot interpret or modify that token,
     #          so we need another mechanism to identify clients. In that case, we need a
@@ -158,19 +183,29 @@ async def handle_request(request: Request, path: str):
                 )
             )
         client = config.key_client_map[headers["api-key"]] if client is None else client
-        headers["api-key"] = config["aoai/key"] or ""
     routing_slip["client"] = client
     if client:
         foreach_plugin(config.plugins, "on_client_identified", routing_slip)
 
-    # forward request to target endpoint and get response
-    aoai_response: httpx.Response = await app.state.target_client.request(
-        request.method,
-        path,
-        params=request.query_params,
-        headers=headers,
-        content=routing_slip["incoming_request_body"],
-    )
+    # get response from AOAI by iterating through the configured endpoints
+    # TODO: add block mechanism if 429 was encountered
+    aoai_response: httpx.Response = None
+    for aoai_endpoint_name in app.state.aoai_endpoints:
+        aoai_endpoint = app.state.aoai_endpoints[aoai_endpoint_name]
+        headers["api-key"] = aoai_endpoint["key"] or ""
+        routing_slip["aoai_endpoint_name"] = aoai_endpoint_name
+        routing_slip["aoai_request_start_time"] = timer()
+        aoai_response = await aoai_endpoint["client"].request(
+            request.method,
+            path,
+            params=request.query_params,
+            headers=headers,
+            content=routing_slip["incoming_request_body"],
+        )
+        if aoai_response.status_code == 429:
+            continue
+        break
+
     routing_slip["headers_from_target"] = aoai_response.headers
     foreach_plugin(config.plugins, "on_headers_from_target_received", routing_slip)
 
@@ -189,6 +224,7 @@ async def handle_request(request: Request, path: str):
         case False:
             # non-streamed response
             body = await aoai_response.aread()
+            measure_aoai_roundtrip_time_ms(routing_slip)
             try:
                 routing_slip["body_dict_from_target"] = json.load(io.BytesIO(body))
                 foreach_plugin(config.plugins, "on_body_dict_from_target_available", routing_slip)
@@ -218,6 +254,7 @@ async def handle_request(request: Request, path: str):
                                 "on_data_event_from_target_received",
                                 routing_slip,
                             )
+                measure_aoai_roundtrip_time_ms(routing_slip)
                 foreach_plugin(
                     config.plugins, "on_end_of_target_response_stream_reached", routing_slip
                 )
@@ -227,6 +264,14 @@ async def handle_request(request: Request, path: str):
                 status_code=aoai_response.status_code,
                 headers=routing_slip["response_headers_from_target"],
             )
+
+
+def measure_aoai_roundtrip_time_ms(routing_slip):
+    """Measure the roundtrip time from/to Azure OpenAI endpoint."""
+    routing_slip["aoai_request_end_time"] = timer()
+    routing_slip["aoai_roundtrip_time_ms"] = int(
+        (routing_slip["aoai_request_end_time"] - routing_slip["aoai_request_start_time"]) * 1000.0
+    )
 
 
 if __name__ == "__main__":

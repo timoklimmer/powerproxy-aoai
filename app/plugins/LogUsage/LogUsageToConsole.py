@@ -8,26 +8,26 @@ class LogUsageToConsole(LogUsageBase):
 
     def _append_line(
         self,
-        request_start_minute,
-        request_start_minute_utc,
+        request_received_utc,
         client,
         is_streaming,
         prompt_tokens,
         completion_tokens,
         total_tokens,
-        openai_processing_ms,
-        openai_region,
+        aoai_roundtrip_time_ms,
+        aoai_region,
+        aoai_endpoint_name,
     ):
         """Append a new line with the given infos."""
         print(
             "---\n"
-            f"Request start minute           : {request_start_minute}\n"
-            f"Request start minute UTC       : {request_start_minute_utc}\n"
-            f"Client                         : {client}\n"
-            f"Is Streaming                   : {is_streaming}\n"
-            f"Prompt Tokens                  : {prompt_tokens}\n"
-            f"Completion Tokens              : {completion_tokens}\n"
-            f"Total Tokens                   : {total_tokens}\n"
-            f"OpenAI Processing Milliseconds : {openai_processing_ms} ms\n"
-            f"OpenAI Region                  : {openai_region}\n"
+            f"Request received UTC        : {request_received_utc}\n"
+            f"Client                      : {client}\n"
+            f"Is Streaming                : {is_streaming}\n"
+            f"Prompt Tokens               : {prompt_tokens}\n"
+            f"Completion Tokens           : {completion_tokens}\n"
+            f"Total Tokens                : {total_tokens}\n"
+            f"Azure OpenAI Roundtrip Time : {aoai_roundtrip_time_ms} ms\n"
+            f"Azure OpenAI Region         : {aoai_region}\n"
+            f"Azure OpenAI Endpoint Name  : {aoai_endpoint_name}\n"
         )

@@ -5,7 +5,7 @@
             "Custom-AzureOpenAIUsage_PP_CL": {
                 "columns": [
                     {
-                        "name": "RequestStartMinute",
+                        "name": "RequestReceivedUtc",
                         "type": "datetime"
                     },
                     {
@@ -29,11 +29,15 @@
                         "type": "int"
                     },
                     {
-                        "name": "OpenAIProcessingMS",
+                        "name": "AoaiRoundtripTimeMS",
                         "type": "real"
                     },
                     {
-                        "name": "OpenAIRegion",
+                        "name": "AoaiRegion",
+                        "type": "string"
+                    },
+                    {
+                        "name": "AoaiEndpointName",
                         "type": "string"
                     }
                 ]

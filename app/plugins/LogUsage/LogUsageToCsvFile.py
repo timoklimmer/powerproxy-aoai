@@ -14,15 +14,15 @@ class LogUsageToCsvFile(LogUsageBase):
     log_file_path = None
 
     columns = [
-        "request_start_minute",
-        "request_start_minute_utc",
+        "request_received_utc",
         "client",
         "is_streaming",
         "prompt_tokens",
         "completion_tokens",
         "total_tokens",
-        "openai_processing_ms",
-        "openai_region",
+        "aoai_roundtrip_time_ms",
+        "aoai_region",
+        "aoai_endpoint_name",
     ]
 
     def on_plugin_instantiated(self):
@@ -44,27 +44,27 @@ class LogUsageToCsvFile(LogUsageBase):
 
     def _append_line(
         self,
-        request_start_minute,
-        request_start_minute_utc,
+        request_received_utc,
         client,
         is_streaming,
         prompt_tokens,
         completion_tokens,
         total_tokens,
-        openai_processing_ms,
-        openai_region,
+        aoai_roundtrip_time_ms,
+        aoai_region,
+        aoai_endpoint_name,
     ):
         """Append a new line with the given infos."""
         with open(self.log_file_path, "a", encoding="utf-8") as log_file:
             log_file.write(
                 "\n"
-                f"{request_start_minute},"
-                f"{request_start_minute_utc},"
+                f"{request_received_utc},"
                 f"{client},"
                 f"{1 if is_streaming else 0},"
                 f"{prompt_tokens},"
                 f"{completion_tokens},"
                 f"{total_tokens},"
-                f"{openai_processing_ms},"
-                f"{openai_region}"
+                f"{aoai_roundtrip_time_ms},"
+                f"{aoai_region},"
+                f"{aoai_endpoint_name}"
             )

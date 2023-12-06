@@ -94,15 +94,15 @@ class LogUsageToLogAnalytics(LogUsageBase):
 
     def _append_line(
         self,
-        request_start_minute,
-        request_start_minute_utc,
+        request_received_utc,
         client,
         is_streaming,
         prompt_tokens,
         completion_tokens,
         total_tokens,
-        openai_processing_ms,
-        openai_region,
+        aoai_roundtrip_time_ms,
+        aoai_region,
+        aoai_endpoint_name,
     ):
         """Append a new line with the given infos."""
         # pylint: disable=no-value-for-parameter
@@ -112,13 +112,14 @@ class LogUsageToLogAnalytics(LogUsageBase):
             logs=[
                 {
                     "Client": client,
-                    "RequestStartMinute": request_start_minute_utc,
+                    "RequestReceivedUtc": f"{request_received_utc}",
                     "IsStreaming": is_streaming,
                     "PromptTokens": prompt_tokens,
                     "CompletionTokens": completion_tokens,
                     "TotalTokens": total_tokens,
-                    "OpenAIProcessingMS": openai_processing_ms,
-                    "OpenAIRegion": openai_region,
+                    "AoaiRoundtripTimeMS": aoai_roundtrip_time_ms,
+                    "AoaiRegion": aoai_region,
+                    "AoaiEndpointName": aoai_endpoint_name,
                 }
             ],
         )

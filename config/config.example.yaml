@@ -46,13 +46,16 @@ plugins:
 
 # Azure OpenAI
 aoai:
-  # endpoint
-  # example value: https://<use your own resource name here>.openai.azure.com/
-  endpoint: https://___.openai.azure.com/
+  endpoints:
+    - name: Some Endpoint
+      url: https://___.openai.azure.com/
+      # not required when Azure OpenAI's Azure AD/Entra ID authentication is used
+      key: ___
 
-  # key to access Azure OpenAI
-  # note: is not required when Azure AD is used to auth against Azure OpenAI
-  key: ___
+    - name: Another Endpoint
+      url: https://___.openai.azure.com/
+      # not required when Azure OpenAI's Azure AD/Entra ID authentication is used
+      key: ___
 
   # # alternatively, specify a mock response to be used instead of the real response from
   # # Azure OpenAI
@@ -86,11 +89,11 @@ azure_subscription_id: ___
 
 # region to which the proxy shall be deployed to Azure
 # example: westeurope
-region: westeurope
+region: ___
 
 # resource group to which the proxy shall be deployed to Azure
 # example: PowerProxy-AOAI
-resource_group: PowerProxy-AOAI
+resource_group: ___
 
 # unique prefix to prepend to certain resource names to avoid naming conflicts.
 # example: abcde
