@@ -153,7 +153,7 @@ async def handle_request(request: Request, path: str):
     }
     foreach_plugin(config.plugins, "on_new_request_received", routing_slip)
 
-    # identify client and replace API key if needed
+    # identify client
     # notes: - When API authentication is used, we get an API key in header 'api-key'. This
     #          would usually be the API key for Azure Open AI, but we configure and use
     #          client-specific keys here for the proxy to identify the client. We will replace the
@@ -192,9 +192,15 @@ async def handle_request(request: Request, path: str):
     aoai_response: httpx.Response = None
     for aoai_endpoint_name in app.state.aoai_endpoints:
         aoai_endpoint = app.state.aoai_endpoints[aoai_endpoint_name]
+
+        # replace API key against real API key from AOAI
         headers["api-key"] = aoai_endpoint["key"] or ""
+
+        # remember endpoint and request start time
         routing_slip["aoai_endpoint_name"] = aoai_endpoint_name
         routing_slip["aoai_request_start_time"] = timer()
+
+        # send request
         aoai_response = await aoai_endpoint["client"].request(
             request.method,
             path,
@@ -205,6 +211,13 @@ async def handle_request(request: Request, path: str):
         if aoai_response.status_code == 429:
             continue
         break
+    if aoai_response is None:
+        raise ImmediateResponseException(
+            Response(
+                content="Could not find any endpoint with remaining capacity. Try again later.",
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            )
+        )
 
     routing_slip["headers_from_target"] = aoai_response.headers
     foreach_plugin(config.plugins, "on_headers_from_target_received", routing_slip)
