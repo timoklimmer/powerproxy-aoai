@@ -10,9 +10,10 @@ import asyncio
 import datetime
 import io
 import json
+import random
+import time
 from contextlib import asynccontextmanager
 from datetime import datetime
-from timeit import default_timer as timer
 
 import httpx
 import uvicorn
@@ -83,6 +84,8 @@ async def lifespan(app: FastAPI):
                     base_url="https://mock/",
                     transport=httpx.MockTransport(get_mock_response),
                 ),
+                "next_request_not_before_timestamp_ms": 0,
+                "non_streaming_fraction": 1,
             }
         }
     else:
@@ -91,6 +94,8 @@ async def lifespan(app: FastAPI):
                 "url": endpoint["url"],
                 "key": endpoint["key"],
                 "client": httpx.AsyncClient(base_url=endpoint["url"]),
+                "next_request_not_before_timestamp_ms": 0,
+                "non_streaming_fraction": float(endpoint["non_streaming_fraction"]),
             }
             for endpoint in config["aoai/endpoints"]
         }
@@ -145,12 +150,21 @@ async def liveness_probe():
 @app.post("/{path:path}")
 async def handle_request(request: Request, path: str):
     """Handle any incoming request."""
-    # create a new routing slip and tell plugins about new request
+    # create a new routing slip, populate it with some variables and tell plugins about new request
     routing_slip = {
+        "request_received_utc": datetime.utcnow(),
         "incoming_request": request,
         "incoming_request_body": await request.body(),
-        "request_received_utc": datetime.utcnow(),
     }
+    routing_slip["incoming_request_body_dict"] = None
+    try:
+        routing_slip["incoming_request_body_dict"] = await request.json()
+    except:
+        pass
+    routing_slip["is_non_streaming_response_requested"] = not (
+        "stream" in routing_slip["incoming_request_body_dict"]
+        and str(routing_slip["incoming_request_body_dict"]["stream"]).lower() == "true"
+    )
     foreach_plugin(config.plugins, "on_new_request_received", routing_slip)
 
     # identify client
@@ -188,17 +202,28 @@ async def handle_request(request: Request, path: str):
         foreach_plugin(config.plugins, "on_client_identified", routing_slip)
 
     # get response from AOAI by iterating through the configured endpoints
-    # TODO: add block mechanism if 429 was encountered
     aoai_response: httpx.Response = None
     for aoai_endpoint_name in app.state.aoai_endpoints:
         aoai_endpoint = app.state.aoai_endpoints[aoai_endpoint_name]
+
+        # try next endpoint if this endpoint is blocked
+        if aoai_endpoint["next_request_not_before_timestamp_ms"] > get_current_timestamp_in_ms():
+            continue
+
+        # try next endpoint if we have a non-streaming request and if we want to skip it to reserve
+        # resources for streaming requests
+        if routing_slip["is_non_streaming_response_requested"] and (
+            aoai_endpoint["non_streaming_fraction"] == 0
+            or random.random() > aoai_endpoint["non_streaming_fraction"]
+        ):
+            continue
 
         # replace API key against real API key from AOAI
         headers["api-key"] = aoai_endpoint["key"] or ""
 
         # remember endpoint and request start time
         routing_slip["aoai_endpoint_name"] = aoai_endpoint_name
-        routing_slip["aoai_request_start_time"] = timer()
+        routing_slip["aoai_request_start_time"] = get_current_timestamp_in_ms()
 
         # send request
         aoai_response = await aoai_endpoint["client"].request(
@@ -208,9 +233,24 @@ async def handle_request(request: Request, path: str):
             headers=headers,
             content=routing_slip["incoming_request_body"],
         )
+
         if aoai_response.status_code == 429:
+            # got 429
+            # block endpoint for some time
+            # TODO: parse infos from response for a more accurate waiting time,
+            #       let's assume 10 seconds for now
+            waiting_time_ms_until_next_request = 10_000
+            aoai_endpoint["next_request_not_before_timestamp_ms"] = (
+                get_current_timestamp_in_ms() + waiting_time_ms_until_next_request
+            )
+            # try next endpoint
             continue
+
+        # if we reached here, we found an endpoint which is able to serve our request
+        # -> go ahead
         break
+
+    # raise 429 if we could not find any endpoint suitable endpoint
     if aoai_response is None:
         raise ImmediateResponseException(
             Response(
@@ -219,10 +259,11 @@ async def handle_request(request: Request, path: str):
             )
         )
 
+    # process received headers
     routing_slip["headers_from_target"] = aoai_response.headers
     foreach_plugin(config.plugins, "on_headers_from_target_received", routing_slip)
 
-    # determine if it's an event stream or not
+    # determine if it's actually an event stream or not
     routing_slip["is_event_stream"] = (
         "content-type" in aoai_response.headers
         and aoai_response.headers["content-type"] == "text/event-stream"
@@ -279,11 +320,16 @@ async def handle_request(request: Request, path: str):
             )
 
 
+def get_current_timestamp_in_ms():
+    """Return the current timestamp in millisecond resolution."""
+    return time.time_ns() // 1_000_000
+
+
 def measure_aoai_roundtrip_time_ms(routing_slip):
     """Measure the roundtrip time from/to Azure OpenAI endpoint."""
-    routing_slip["aoai_request_end_time"] = timer()
+    routing_slip["aoai_request_end_time"] = get_current_timestamp_in_ms()
     routing_slip["aoai_roundtrip_time_ms"] = int(
-        (routing_slip["aoai_request_end_time"] - routing_slip["aoai_request_start_time"]) * 1000.0
+        routing_slip["aoai_request_end_time"] - routing_slip["aoai_request_start_time"]
     )
 
 

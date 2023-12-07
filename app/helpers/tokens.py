@@ -11,20 +11,14 @@
 #   https://github.com/openai/openai-cookbook/blob/main/examples/How_to_count_tokens_with_tiktoken.ipynb
 # - code will need update as new models come out and more documentation or usage infos are available
 
-import io
-import json
-
 import tiktoken
 
 
-def estimate_prompt_tokens_from_request_body(request_body):
+def estimate_prompt_tokens_from_request_body_dict(request_body_dict):
     """Return the estimated number of tokes in the given request body string."""
-    try:
-        request_body_dict = json.load(io.BytesIO(request_body))
-        return estimate_tokens_from_messages(request_body_dict["messages"])
-    except:
-        # eat any exception and return 0 to avoid breaking the system
+    if request_body_dict is None or "messages" not in request_body_dict:
         return 0
+    return estimate_tokens_from_messages(request_body_dict["messages"])
 
 
 def estimate_tokens_from_string(string, encoding_name="cl100k_base"):

@@ -3,7 +3,7 @@
 import importlib
 import re
 
-from helpers.tokens import estimate_prompt_tokens_from_request_body
+from helpers.tokens import estimate_prompt_tokens_from_request_body_dict
 
 
 def foreach_plugin(plugins, method_name, *args):
@@ -110,8 +110,8 @@ class TokenCountingPlugin(PowerProxyPlugin):
         """Process the end of a stream (needs streaming requested)."""
         super().on_end_of_target_response_stream_reached(routing_slip)
 
-        self.prompt_tokens = estimate_prompt_tokens_from_request_body(
-            routing_slip["incoming_request_body"]
+        self.prompt_tokens = estimate_prompt_tokens_from_request_body_dict(
+            routing_slip["incoming_request_body_dict"]
         )
         self.completion_tokens = self.streaming_completion_tokens
         self.total_tokens = (
