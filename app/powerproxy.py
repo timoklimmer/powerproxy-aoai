@@ -236,10 +236,13 @@ async def handle_request(request: Request, path: str):
 
         if aoai_response.status_code == 429:
             # got 429
-            # block endpoint for some time
-            # TODO: parse infos from response for a more accurate waiting time,
-            #       let's assume 10 seconds for now
-            waiting_time_ms_until_next_request = 10_000
+            # block endpoint for some time, either according to the time given by AOAI or, if not
+            # available, for 10 seconds
+            waiting_time_ms_until_next_request = (
+                int(aoai_response.headers["retry-after-ms"])
+                if "retry-after-ms" in aoai_response.headers
+                else 10_000
+            )
             aoai_endpoint["next_request_not_before_timestamp_ms"] = (
                 get_current_timestamp_in_ms() + waiting_time_ms_until_next_request
             )
