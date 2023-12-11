@@ -20,7 +20,7 @@ WORKDIR /app
 COPY ./app /app
 
 # create a non-root user with an explicit UID and adds permission to access the /app folder.
-RUN adduser -u 5678 --disabled-password --gecos "" appuser && chown -R appuser /app
+RUN adduser -u 5678 --disabled-password --gecos "" appuser && chown -R appuser /app && mkdir /logs && chown appuser /logs
 USER appuser
 
 # define the entry point
