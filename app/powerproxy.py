@@ -229,6 +229,7 @@ async def handle_request(request: Request, path: str):
         aoai_response = await aoai_endpoint["client"].request(
             request.method,
             path,
+            timeout=120.0,
             params=request.query_params,
             headers=headers,
             content=routing_slip["incoming_request_body"],
