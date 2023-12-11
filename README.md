@@ -128,8 +128,6 @@ the file, and afterwards import it into Azure again.
 ask for a streaming response. In that case, an approximation based on code provided by OpenAI is
 used. Once exact numbers are available for streaming responses, this repo will be updated. For
 non-streaming responses, token numbers are exact.
-- Currently, the LimitUsage plugin limits usage per worker. As a result, the limiting does not work
-as intended when multiple workers are used. A fix will be provided in the next few days.
 
 ## Authors
 - Timo Klimmer, Microsoft (lead)

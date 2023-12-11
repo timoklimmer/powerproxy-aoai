@@ -30,6 +30,11 @@ clients:
 # defines the plugins enabled for the proxy
 plugins:
   - name: LimitUsage
+    # remove the redis field if no redis synchronization is desired
+    # note: do that only in case of a single PowerProxy worker where no synchronization is needed
+    redis:
+      redis_host: <will be set by deployment script>
+      redis_password: <will be set by deployment script>
   - name: LogUsageToConsole
   - name: LogUsageToCsvFile
   - name: LogUsageToLogAnalytics

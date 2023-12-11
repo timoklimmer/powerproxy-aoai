@@ -57,6 +57,7 @@ $RESOURCE_GROUP = $CONFIG.resource_group
 $REGION = $CONFIG.region
 $UNIQUE_PREFIX = $CONFIG.unique_prefix
 $KEY_VAULT_NAME = "${UNIQUE_PREFIX}powerproxyaoai"
+$REDIS_CACHE_NAME = "${UNIQUE_PREFIX}powerproxyaoai"
 $ACR_REGISTRY_NAME = "${UNIQUE_PREFIX}powerproxyaoai"
 $ACR_SKU = "Basic"
 $ACR_ADMIN_ENABLED = $True
@@ -108,33 +109,56 @@ Write-Host "Creating Key Vault..." -ForegroundColor Blue
 Write-Host "Checking if Key Vault pre-exists..." -ForegroundColor Blue
 if ($(az keyvault list --query [?name==``$KEY_VAULT_NAME``] -g $RESOURCE_GROUP -o tsv)) {
   Write-Host "Deleting pre-existing Key Vault..." -ForegroundColor Blue
-  az keyvault delete --name $KEY_VAULT_NAME
+  az keyvault delete --name $KEY_VAULT_NAME -g $RESOURCE_GROUP
+  Write-Host "Waiting for Key Vault to be deleted..." -ForegroundColor Blue
+  az keyvault wait --name $KEY_VAULT_NAME --deleted -g $RESOURCE_GROUP
 }
 Write-Host "Checking if Key Vault needs to be purged..." -ForegroundColor Blue
 if ($(az keyvault list-deleted --query [?name==``$KEY_VAULT_NAME``] -o tsv)) {
   Write-Host "Purging Key Vault..." -ForegroundColor Blue
   az keyvault purge --name $KEY_VAULT_NAME --location $REGION
+  Start-Sleep -Seconds 30
 }
-Write-Host "Creating Key Vault..." -ForegroundColor Blue
+Write-Host "Creating Key Vault service..." -ForegroundColor Blue
 az keyvault create `
   --name $KEY_VAULT_NAME `
   --resource-group $RESOURCE_GROUP `
   --location $REGION
-Start-Sleep -Seconds 30
+Write-Host "Waiting for Key Vault creation to complete..." -ForegroundColor Blue
 az keyvault wait --name $KEY_VAULT_NAME --created
+Write-Host "Getting Key Vault URI..." -ForegroundColor Blue
 $KEY_VAULT_URI = (az keyvault show `
   --name $KEY_VAULT_NAME `
   --resource-group $RESOURCE_GROUP `
   --query properties.vaultUri `
   -o tsv
 )
-
-# assign
 Write-Host "Assigning permissions to managed identity..." -ForegroundColor Blue
 az keyvault set-policy `
   --name $KEY_VAULT_NAME `
   --object-id $USER_MANAGED_IDENTITY_PRINCIPAL_ID `
   --secret-permissions get set
+
+# create Redis cache
+Write-Host "Creating Redis cache..." -ForegroundColor Blue
+az redis create `
+  --location $REGION `
+  --name $REDIS_CACHE_NAME `
+  --resource-group $RESOURCE_GROUP `
+  --sku Standard `
+  --vm-size c0
+$REDIS_HOST = $(az redis show `
+  --name $REDIS_CACHE_NAME `
+  -g $RESOURCE_GROUP `
+  --query hostName `
+  -o tsv
+)
+$REDIS_PASSWORD = $(az redis list-keys `
+  --name $REDIS_CACHE_NAME `
+  -g $RESOURCE_GROUP `
+  --query primaryKey `
+  -o tsv `
+)
 
 # create container registry
 Write-Host "Creating container registry..." -ForegroundColor Blue
@@ -143,7 +167,6 @@ az acr create `
   --resource-group $RESOURCE_GROUP `
   --sku $ACR_SKU `
   --admin-enabled $ACR_ADMIN_ENABLED
-Start-Sleep -Seconds 30
 
 # build container (in Azure)
 Write-Host "Building container..." -ForegroundColor Blue
@@ -269,6 +292,14 @@ Try {
   $new_yaml_config_string = ($new_yaml_config_string `
     -replace "(?m)(?<=^\s*data_collection_rule_id\s*:\s+).*$", `
     $DCR_IMMUTABLE_ID)
+  # redis_host
+  $new_yaml_config_string = ($new_yaml_config_string `
+    -replace "(?m)(?<=^\s*redis_host\s*:\s+).*$", `
+    $REDIS_HOST)
+  # redis_password
+  $new_yaml_config_string = ($new_yaml_config_string `
+    -replace "(?m)(?<=^\s*redis_password\s*:\s+).*$", `
+    $REDIS_PASSWORD)
 
   #-- write to file and set secret in Key Vault
   $new_yaml_config_string | Set-Content -Path $temp_config_yaml_path
@@ -276,7 +307,7 @@ Try {
     --vault-name $KEY_VAULT_NAME `
     --name "config-string" `
     --file $temp_config_yaml_path `
-    --only-show-errors
+    --output none
 
 }
 Finally {
