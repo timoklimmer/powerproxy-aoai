@@ -1,6 +1,5 @@
 # the teams or use cases accessing Azure OpenAI (aka. "clients") and their keys
 # notes: - each client must have a unique key. PowerProxy identifies clients by the given key.
-#        - should be a single line, even for defining multiple clients
 #        - leave empty if Azure AD auth against Azure OpenAI is used.
 clients:
   - name: Team 1
