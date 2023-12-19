@@ -32,7 +32,7 @@ friends. Provided "as is" = Free for use and modification. Not an official Micro
 but supported as if it was developed by you.
 
 There is also an article over at [Medium](https://medium.com/@timo.klimmer/powerproxy-for-azure-openai-e02b1c478bde)
-introducing PowerProxy.
+introducing PowerProxy as well as a [PowerPoint deck](docs/PowerProxy%20for%20Azure%20OpenAI.pptx).
 
 ## Architecture
 
