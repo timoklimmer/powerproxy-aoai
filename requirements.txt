@@ -1,5 +1,5 @@
 PyYAML==6.0.1
-httpx==0.25.2
+httpx==0.26.0
 uvicorn[standard]==0.24.0.post1
 fastapi==0.105.0
 tiktoken==0.5.2
