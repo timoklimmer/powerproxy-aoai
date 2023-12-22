@@ -24,7 +24,8 @@ point for creating your own file.
 If you want to run the deployment file step-by-step, you can use the PowerShell extension in VS.Code
 and run individual code blocks by selecting them and pressing F8.
 
-PowerShell version should be 7+. Also make sure your Azure CLI installation is up-to-date.
+PowerShell version should be 7+. Also make sure your Azure CLI installation is up-to-date, and run
+this script in a Python environment that has the packages from requirments.txt installed.
 #>
 param(
   [Parameter(mandatory=$true)]
