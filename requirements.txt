@@ -1,6 +1,6 @@
 PyYAML==6.0.1
 httpx==0.26.0
-uvicorn[standard]==0.26.0
+uvicorn[standard]==0.27.0
 fastapi==0.109.0
 tiktoken==0.5.2
 azure-identity==1.15.0
