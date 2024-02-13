@@ -5,7 +5,7 @@ from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
 
 client = AzureOpenAI(
     azure_endpoint="http://localhost",
-    api_version="2023-03-15-preview",
+    api_version="2023-05-15",
     api_key="72bd81ef32763530b29e3da63d46ad6",
 )
 
