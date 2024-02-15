@@ -298,11 +298,14 @@ async def handle_request(request: Request, path: str):
             except:
                 # eat any exception in case the response cannot be parsed
                 pass
-            return Response(
+            response = Response(
                 content=body,
                 status_code=aoai_response.status_code,
                 headers=routing_slip["response_headers_from_target"],
             )
+            if "Transfer-Encoding" in response.headers and "Content-Length" in response.headers:
+                del response.headers["Content-Length"]
+            return response
         case True:
             # event stream
             # forward and process events as they come in
