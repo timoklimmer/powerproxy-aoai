@@ -244,8 +244,8 @@ async def handle_request(request: Request, path: str):
             aoai_request,
             stream=(not routing_slip["is_non_streaming_response_requested"]),
         )
-        if aoai_response.status_code == 429:
-            # got 429
+        if aoai_response.status_code in [429, 500]:
+            # got 429 or 500
             # block endpoint for some time, either according to the time given by AOAI or, if not
             # available, for 10 seconds
             waiting_time_ms_until_next_request = (
