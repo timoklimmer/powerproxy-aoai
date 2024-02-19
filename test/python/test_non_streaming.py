@@ -1,4 +1,8 @@
-"""Script to test the proxy's support for requests responding with a one-time response."""
+"""
+Script to test the proxy's support for requests responding with a one-time response.
+
+Tested with openai package version 1.12.0.
+"""
 
 from openai import AzureOpenAI
 

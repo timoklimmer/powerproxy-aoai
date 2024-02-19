@@ -1,4 +1,8 @@
-"""Script to test the proxy's ability to support response streaming."""
+"""
+Script to test the proxy's ability to support response streaming.
+
+Tested with openai package version 1.12.0.
+"""
 
 from openai import AzureOpenAI
 from openai.types.chat.chat_completion_chunk import ChatCompletionChunk

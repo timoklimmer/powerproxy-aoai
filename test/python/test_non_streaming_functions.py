@@ -1,4 +1,8 @@
-"""Script to test the proxy's ability to support response streaming when functions are used."""
+"""
+Script to test the proxy's ability to support response streaming when functions are used.
+
+Tested with openai package version 1.12.0.
+"""
 
 from openai import AzureOpenAI
 
