@@ -45,6 +45,7 @@ Write-Host "Deploying PowerProxy to Azure..." -ForegroundColor Blue
 Write-Host "--------------------------------" -ForegroundColor Blue
 
 # register required namespaces in subscription if not done yet (required only once per subscription)
+az provider register --namespace Microsoft.ContainerRegistry
 az provider register --namespace Microsoft.App
 az provider register --namespace Microsoft.OperationalInsights
 # ensure that the Azure CLI has the required extensions installed (required only once per machine)
