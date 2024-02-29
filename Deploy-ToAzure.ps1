@@ -45,6 +45,7 @@ Write-Host "Deploying PowerProxy to Azure..." -ForegroundColor Blue
 Write-Host "--------------------------------" -ForegroundColor Blue
 
 # register required namespaces in subscription if not done yet (required only once per subscription)
+az provider register --namespace Microsoft.ContainerRegistry
 az provider register --namespace Microsoft.App
 az provider register --namespace Microsoft.OperationalInsights
 # ensure that the Azure CLI has the required extensions installed (required only once per machine)
@@ -118,7 +119,7 @@ Write-Host "Checking if Key Vault needs to be purged..." -ForegroundColor Blue
 if ($(az keyvault list-deleted --query [?name==``$KEY_VAULT_NAME``] -o tsv)) {
   Write-Host "Purging Key Vault..." -ForegroundColor Blue
   az keyvault purge --name $KEY_VAULT_NAME --location $REGION
-  Start-Sleep -Seconds 30
+  Start-Sleep -Seconds 120
 }
 Write-Host "Creating Key Vault service..." -ForegroundColor Blue
 az keyvault create `
@@ -259,7 +260,7 @@ Try {
     --location $REGION `
     --rule-file $rule_file_path `
     --query immutableId `
-    -endpoint-id $DATA_COLLECTION_ENDPOINT_ID `
+    --endpoint-id $DATA_COLLECTION_ENDPOINT_ID `
     --output tsv
   )
 }
