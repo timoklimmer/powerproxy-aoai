@@ -119,7 +119,7 @@ Write-Host "Checking if Key Vault needs to be purged..." -ForegroundColor Blue
 if ($(az keyvault list-deleted --query [?name==``$KEY_VAULT_NAME``] -o tsv)) {
   Write-Host "Purging Key Vault..." -ForegroundColor Blue
   az keyvault purge --name $KEY_VAULT_NAME --location $REGION
-  Start-Sleep -Seconds 30
+  Start-Sleep -Seconds 120
 }
 Write-Host "Creating Key Vault service..." -ForegroundColor Blue
 az keyvault create `
@@ -225,7 +225,7 @@ az monitor log-analytics workspace table create `
     AoaiEndpointName=string
 # data collection endpoint
 Write-Host "Creating data collection endpoint..." -ForegroundColor Blue
-$DATA_COLLECTION_ENDPOINT_ID = (az monitor data-collection endpoint create `
+$DATA_COLLECTION_ENDPOINT_IMMUTABLE_ID = (az monitor data-collection endpoint create `
   --name $DATA_COLLECTION_ENDPOINT_NAME `
   --resource-group $RESOURCE_GROUP `
   --location $REGION `
@@ -239,6 +239,12 @@ $LOGS_INGESTION_ENDPOINT = (az monitor data-collection endpoint show `
   --query logsIngestion.endpoint `
   --output tsv `
 )
+$DATA_COLLECTION_ENDPOINT_ID = (az monitor data-collection endpoint show `
+  --name $DATA_COLLECTION_ENDPOINT_NAME `
+  --resource-group $RESOURCE_GROUP `
+  --query id `
+  --output tsv `
+)
 # data collection rule
 Write-Host "Creating data collection rule..." -ForegroundColor Blue
 $rule_file_path = "rule-file.json"
@@ -247,13 +253,14 @@ Try {
   ((Get-Content $rule_file_path) -replace "##workspaceResourceId##", $LOG_ANALYTICS_WORKSPACE_ID) `
     | Set-Content -Path $rule_file_path
   ((Get-Content $rule_file_path) -replace "##dataCollectionEndpointId##", `
-      $DATA_COLLECTION_ENDPOINT_ID) | Set-Content -Path $rule_file_path
+      $DATA_COLLECTION_ENDPOINT_IMMUTABLE_ID) | Set-Content -Path $rule_file_path
   $DCR_IMMUTABLE_ID = (az monitor data-collection rule create `
     --name "AzureOpenAIUsage_PP_CL" `
     --resource-group $RESOURCE_GROUP `
     --location $REGION `
     --rule-file $rule_file_path `
     --query immutableId `
+    --endpoint-id $DATA_COLLECTION_ENDPOINT_ID `
     --output tsv
   )
 }
