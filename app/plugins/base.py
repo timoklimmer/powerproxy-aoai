@@ -92,7 +92,7 @@ class TokenCountingPlugin(PowerProxyPlugin):
         super().on_body_dict_from_target_available(routing_slip)
 
         usage = routing_slip["body_dict_from_target"]["usage"]
-        self.completion_tokens = usage["completion_tokens"]
+        self.completion_tokens = usage.get("completion_tokens", 0)
         self.prompt_tokens = usage["prompt_tokens"]
         self.total_tokens = usage["total_tokens"]
 
