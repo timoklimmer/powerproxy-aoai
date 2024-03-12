@@ -155,6 +155,7 @@ async def handle_request(request: Request, path: str):
         "request_received_utc": datetime.utcnow(),
         "incoming_request": request,
         "incoming_request_body": await request.body(),
+        "path": path,
     }
     routing_slip["incoming_request_body_dict"] = None
     try:
@@ -234,7 +235,7 @@ async def handle_request(request: Request, path: str):
         new_timeout.read = 120.0
         aoai_request = aoai_endpoint["client"].build_request(
             request.method,
-            path,
+            routing_slip["path"],
             timeout=new_timeout,
             params=request.query_params,
             headers=headers,
@@ -263,7 +264,7 @@ async def handle_request(request: Request, path: str):
         # -> go ahead
         break
 
-    # raise 429 if we could not find any endpoint suitable endpoint
+    # raise 429 if we could not find any suitable endpoint
     if aoai_response is None:
         raise ImmediateResponseException(
             Response(
