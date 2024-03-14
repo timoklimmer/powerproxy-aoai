@@ -26,6 +26,10 @@ and run individual code blocks by selecting them and pressing F8.
 
 PowerShell version should be 7+. Also make sure your Azure CLI installation is up-to-date, and run
 this script in a Python environment that has the packages from requirments.txt installed.
+
+For the script to succeed, you will need to have certain roles/permissions. Until a more
+fine-grained list of required roles is available, you might want to run this script as Owner of your
+subscription.
 #>
 param(
   [Parameter(mandatory=$true)]
