@@ -10,7 +10,7 @@ import json
 
 client = AzureOpenAI(
     azure_endpoint="http://localhost",
-    api_version="2023-12-01-preview",
+    api_version="2024-02-01",
     api_key="04ae14bc78184621d37f1ce57a52eb7",
 )
 
@@ -22,7 +22,7 @@ def search_hotels(location, max_price, features):
 
 
 def run_conversation():
-    messages = [{"role": "user", "content": "Find beachfront hotels in San Diego for less than $300 a month with free breakfast."}]
+    messages = [{"role": "user", "content": "Tell me a joke and then find beachfront hotels in San Diego for less than $300 a month with free breakfast."}]
     tools = [
         {
             "type": "function",
@@ -51,7 +51,7 @@ def run_conversation():
         }
     ]
     response = client.chat.completions.create(
-        model="35turbo",
+        model="gpt4-turbo",
         messages=messages,
         tools=tools,
         temperature=0,
@@ -85,7 +85,7 @@ def run_conversation():
                 }
             )  # extend conversation with function response
         second_response = client.chat.completions.create(
-            model="35turbo",
+            model="gpt4-turbo",
             messages=messages,
         )  # get a new response from the model where it can see the function response
         return second_response

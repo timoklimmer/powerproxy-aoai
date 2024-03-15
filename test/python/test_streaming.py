@@ -9,12 +9,12 @@ from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
 
 client = AzureOpenAI(
     azure_endpoint="http://localhost",
-    api_version="2023-05-15",
+    api_version="2024-02-01",
     api_key="72bd81ef32763530b29e3da63d46ad6",
 )
 
 response = client.chat.completions.create(
-    model="35turbo",
+    model="gpt4-turbo",
     messages=[
         {
             "role": "system",
