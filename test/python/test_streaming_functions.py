@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 Script to test the proxy's ability to support response streaming when functions are used.
 
