@@ -14,15 +14,37 @@ client = AzureOpenAI(
     api_key="72bd81ef32763530b29e3da63d46ad6",
 )
 
+
 def search_hotels(location, max_price, features):
-    print(f"PRINT STATEMENT: searching hotels in {location} with {max_price} and {features}") #Clairfication that the function actually is running and the model isn't making stuff up.
+    print(
+        f"PRINT STATEMENT: searching hotels in {location} with {max_price} and {features}"
+    )  # Clairfication that the function actually is running and the model isn't making stuff up.
     if location == "San Diego":
-        return json.dumps([{"name": "Hotel 1", "price": 200, "features": ["beachfront", "free breakfast"]}, {"name": "Hotel 2", "price": 250, "features": ["beachfront", "free breakfast"]}])
+        return json.dumps(
+            [
+                {
+                    "name": "Hotel 1",
+                    "price": 200,
+                    "features": ["beachfront", "free breakfast"],
+                },
+                {
+                    "name": "Hotel 2",
+                    "price": 250,
+                    "features": ["beachfront", "free breakfast"],
+                },
+            ]
+        )
     else:
         return json.dumps({"location": location, "temperature": "unknown"})
 
+
 def run_conversation():
-    messages = [{"role": "user", "content": "Tell me a funny joke and also find beachfront hotels in San Diego for less than $300 a month with free breakfast."}]
+    messages = [
+        {
+            "role": "user",
+            "content": "Tell me a funny joke and also find beachfront hotels in San Diego for less than $300 a month with free breakfast.",
+        }
+    ]
     tools = [
         {
             "type": "function",
@@ -47,7 +69,7 @@ def run_conversation():
                     },
                     "required": ["location"],
                 },
-            }
+            },
         }
     ]
 
@@ -60,9 +82,10 @@ def run_conversation():
         stream=True,
     )
 
-    available_functions = {"search_hotels": search_hotels,
-                        # "add_another_function_here": add_another_function_here,
-                           }
+    available_functions = {
+        "search_hotels": search_hotels,
+        # "add_another_function_here": add_another_function_here,
+    }
     response_text = ""
     tool_calls = []
 
@@ -85,7 +108,13 @@ def run_conversation():
             tcchunklist = delta.tool_calls
             for tcchunk in tcchunklist:
                 if len(tool_calls) <= tcchunk.index:
-                    tool_calls.append({"id": "", "type": "function", "function": { "name": "", "arguments": "" } })
+                    tool_calls.append(
+                        {
+                            "id": "",
+                            "type": "function",
+                            "function": {"name": "", "arguments": ""},
+                        }
+                    )
                 tc = tool_calls[tcchunk.index]
 
                 if tcchunk.id:
@@ -100,44 +129,43 @@ def run_conversation():
     messages.append(
         {
             "tool_calls": tool_calls,
-            "role": 'assistant',
+            "role": "assistant",
         }
     )
 
     for tool_call in tool_calls:
 
-        function_name = tool_call['function']['name']
+        function_name = tool_call["function"]["name"]
         function_to_call = available_functions[function_name]
-        function_args = json.loads(tool_call['function']['arguments'])
+        function_args = json.loads(tool_call["function"]["arguments"])
         function_response = function_to_call(
             location=function_args.get("location"),
             max_price=function_args.get("max_price"),
-            features=function_args.get("features")
+            features=function_args.get("features"),
             # unit=function_args.get("unit"),
         )
 
         messages.append(
             {
-                "tool_call_id": tool_call['id'],
+                "tool_call_id": tool_call["id"],
                 "role": "tool",
                 "name": function_name,
                 "content": function_response,
             }
         )  # extend conversation with function response
 
-    # print(messages)
+        # print(messages)
 
         # Make a follow-up API call with the updated messages, including function call responses with tool id
         stream = client.chat.completions.create(
-            model="gpt4-turbo",
-            messages=messages,
-            stream = True
+            model="gpt4-turbo", messages=messages, stream=True
         )  # get a new response from the model where it can see the function response
-         # Prints each chunk as they come after the function is called and the result is available.
+        # Prints each chunk as they come after the function is called and the result is available.
         for chunk in stream:
             if len(chunk.choices) == 0:
                 continue
             if chunk.choices[0].delta.content is not None:
                 print(chunk.choices[0].delta.content, end="")
+
 
 print(run_conversation())

@@ -14,15 +14,34 @@ client = AzureOpenAI(
     api_key="04ae14bc78184621d37f1ce57a52eb7",
 )
 
+
 def search_hotels(location, max_price, features):
     if location == "San Diego":
-        return json.dumps([{"name": "Hotel 1", "price": 200, "features": ["beachfront", "free breakfast"]}, {"name": "Hotel 2", "price": 250, "features": ["beachfront", "free breakfast"]}])
+        return json.dumps(
+            [
+                {
+                    "name": "Hotel 1",
+                    "price": 200,
+                    "features": ["beachfront", "free breakfast"],
+                },
+                {
+                    "name": "Hotel 2",
+                    "price": 250,
+                    "features": ["beachfront", "free breakfast"],
+                },
+            ]
+        )
     else:
         return json.dumps({"location": location, "temperature": "unknown"})
 
 
 def run_conversation():
-    messages = [{"role": "user", "content": "Tell me a joke and then find beachfront hotels in San Diego for less than $300 a month with free breakfast."}]
+    messages = [
+        {
+            "role": "user",
+            "content": "Tell me a joke and then find beachfront hotels in San Diego for less than $300 a month with free breakfast.",
+        }
+    ]
     tools = [
         {
             "type": "function",
@@ -47,7 +66,7 @@ def run_conversation():
                     },
                     "required": ["location"],
                 },
-            }
+            },
         }
     ]
     response = client.chat.completions.create(
@@ -74,7 +93,7 @@ def run_conversation():
             function_response = function_to_call(
                 location=function_args.get("location"),
                 max_price=function_args.get("max_price"),
-                features=function_args.get("features")
+                features=function_args.get("features"),
             )
             messages.append(
                 {
@@ -89,5 +108,6 @@ def run_conversation():
             messages=messages,
         )  # get a new response from the model where it can see the function response
         return second_response
+
 
 print(run_conversation())
