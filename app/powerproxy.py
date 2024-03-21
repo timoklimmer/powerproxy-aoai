@@ -201,6 +201,13 @@ async def handle_request(request: Request, path: str):
     routing_slip["client"] = client
     if client:
         foreach_plugin(config.plugins, "on_client_identified", routing_slip)
+    else:
+        raise ValueError(
+            (
+                "The request does not contain a valid API key. Ensure that the 'api-key' header "
+                "contains a valid API key from the PowerProxy's configuration."
+            )
+        )
 
     # get response from AOAI by iterating through the configured endpoints
     aoai_response: httpx.Response = None
