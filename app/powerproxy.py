@@ -224,7 +224,8 @@ async def handle_request(request: Request, path: str):
             continue
 
         # replace API key against real API key from AOAI, but only if the request has an API key
-        # note: intentionally not raising an exception here to support Azure AD/Entra ID auth
+        # note: intentionally not raising an exception here to support requests using Azure AD/
+        #       Entra ID authentication.
         if "api-key" in headers:
             headers["api-key"] = aoai_endpoint["key"] or ""
 
