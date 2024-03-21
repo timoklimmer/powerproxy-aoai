@@ -223,8 +223,10 @@ async def handle_request(request: Request, path: str):
         ):
             continue
 
-        # replace API key against real API key from AOAI
-        headers["api-key"] = aoai_endpoint["key"] or ""
+        # replace API key against real API key from AOAI, but only if the request has an API key
+        # note: intentionally not raising an exception here to support Azure AD/Entra ID auth
+        if "api-key" in headers:
+            headers["api-key"] = aoai_endpoint["key"] or ""
 
         # remember endpoint and request start time
         routing_slip["aoai_endpoint_name"] = aoai_endpoint_name
