@@ -1,12 +1,13 @@
-#!/usr/bin/env python
 """
 Script to test the proxy's ability to support response streaming when functions are used.
 
 Tested with openai package version 1.12.0.
 """
 
-from openai import AzureOpenAI
+# pylint: disable=not-an-iterable, duplicate-key
+
 import json
+from openai import AzureOpenAI
 
 client = AzureOpenAI(
     azure_endpoint="http://localhost",
@@ -14,43 +15,25 @@ client = AzureOpenAI(
     api_key="72bd81ef32763530b29e3da63d46ad6",
 )
 
+deployment_name = "gpt-4-turbo"
 
-def search_hotels(location, max_price, features):
-    print(
-        f"PRINT STATEMENT: searching hotels in {location} with {max_price} and {features}"
-    )  # Clairfication that the function actually is running and the model isn't making stuff up.
-    if location == "San Diego":
-        return json.dumps(
-            [
-                {
-                    "name": "Hotel 1",
-                    "price": 200,
-                    "features": ["beachfront", "free breakfast"],
-                },
-                {
-                    "name": "Hotel 2",
-                    "price": 250,
-                    "features": ["beachfront", "free breakfast"],
-                },
-            ]
-        )
-    else:
-        return json.dumps({"location": location, "temperature": "unknown"})
-
-
-def run_conversation():
-    messages = [
+function_name = ""
+arguments = ""
+for chunk in client.chat.completions.create(
+    model=deployment_name,
+    messages=[
         {
             "role": "user",
-            "content": "Tell me a funny joke and also find beachfront hotels in San Diego for less than $300 a month with free breakfast.",
+            # "content": "Find beachfront hotels in San Diego for less than $300 a month with free breakfast.",
+            "content": "Book Palace Beach, starting Feb 14 to Feb 18.",
         }
-    ]
-    tools = [
+    ],
+    tools=[
         {
             "type": "function",
             "function": {
                 "name": "search_hotels",
-                "description": "Retrieves hotels from the search index based on the parameters provided",
+                "description": "Retrieves hotels from the search index based on the parameters provided.",
                 "parameters": {
                     "type": "object",
                     "properties": {
@@ -70,102 +53,61 @@ def run_conversation():
                     "required": ["location"],
                 },
             },
-        }
-    ]
-
-    stream = client.chat.completions.create(
-        model="gpt4-turbo",
-        messages=messages,
-        tools=tools,
-        temperature=0,
-        tool_choice="auto",
-        stream=True,
-    )
-
-    available_functions = {
-        "search_hotels": search_hotels,
-        # "add_another_function_here": add_another_function_here,
-    }
-    response_text = ""
-    tool_calls = []
-
-    for chunk in stream:
-
-        if len(chunk.choices) == 0:
-            print("choices is empty")
-            continue
-
-        if chunk.choices[0].delta:
-            print(chunk.choices)
-            delta = chunk.choices[0].delta
-
-        if delta and delta.content:
-            # content chunk -- send to browser and record for later saving
-            print(delta.content)
-            response_text += delta.content
-
-        elif delta and delta.tool_calls:
-            tcchunklist = delta.tool_calls
-            for tcchunk in tcchunklist:
-                if len(tool_calls) <= tcchunk.index:
-                    tool_calls.append(
-                        {
-                            "id": "",
-                            "type": "function",
-                            "function": {"name": "", "arguments": ""},
-                        }
-                    )
-                tc = tool_calls[tcchunk.index]
-
-                if tcchunk.id:
-                    tc["id"] += tcchunk.id
-                if tcchunk.function.name:
-                    tc["function"]["name"] += tcchunk.function.name
-                if tcchunk.function.arguments:
-                    tc["function"]["arguments"] += tcchunk.function.arguments
-
-    # print(tool_calls)
-
-    messages.append(
+        },
         {
-            "tool_calls": tool_calls,
-            "role": "assistant",
-        }
-    )
-
-    for tool_call in tool_calls:
-
-        function_name = tool_call["function"]["name"]
-        function_to_call = available_functions[function_name]
-        function_args = json.loads(tool_call["function"]["arguments"])
-        function_response = function_to_call(
-            location=function_args.get("location"),
-            max_price=function_args.get("max_price"),
-            features=function_args.get("features"),
-            # unit=function_args.get("unit"),
-        )
-
-        messages.append(
-            {
-                "tool_call_id": tool_call["id"],
-                "role": "tool",
-                "name": function_name,
-                "content": function_response,
-            }
-        )  # extend conversation with function response
-
-        # print(messages)
-
-        # Make a follow-up API call with the updated messages, including function call responses with tool id
-        stream = client.chat.completions.create(
-            model="gpt4-turbo", messages=messages, stream=True
-        )  # get a new response from the model where it can see the function response
-        # Prints each chunk as they come after the function is called and the result is available.
-        for chunk in stream:
-            if len(chunk.choices) == 0:
-                continue
-            if chunk.choices[0].delta.content is not None:
-                print(chunk.choices[0].delta.content, end="")
+            "type": "function",
+            "function": {
+                "name": "book_hotel",
+                "description": "Books a hotel based on the parameters provided.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "name": {
+                            "type": "string",
+                            "description": "The name of the hotel (i.e. Palace Beach)",
+                        },
+                        "start_date": {
+                            "type": "string",
+                            "description": "The start date of the booking.",
+                        },
+                        "end_date": {
+                            "type": "string",
+                            "description": "The end date of the booking.",
+                        },
+                    },
+                    "required": ["name", "start_date", "end_date"],
+                },
+            },
+        },
+    ],
+    temperature=0,
+    tool_choice="auto",
+    stream=True,
+):
+    if "ChoiceDeltaToolCallFunction" in f"{chunk}":
+        function_name += chunk.choices[0].delta.tool_calls[0].function.name or ""
+        arguments += chunk.choices[0].delta.tool_calls[0].function.arguments or ""
 
 
-print(run_conversation())
+def search_hotels(location, max_price, features):
+    """Searches for hotels."""
+    print(f"Searching hotels in {location} with max price {max_price} and {features}...")
+    print("TODO: Complete -- this function is only for demo purposes.")
+
+
+def book_hotel(name, start_date, end_date):
+    """Books a hotel."""
+    print(f"Booking hotel '{name}'. Start date: {start_date}, End date: {end_date}...")
+    print("TODO: Complete -- this function is only for demo purposes.")
+
+
+print(f"Function Name: {function_name}")
+print(f"Arguments: {arguments}")
+
+match function_name:
+    case "search_hotels":
+        search_hotels(**(json.loads(arguments)))
+    case "book_hotel":
+        book_hotel(**(json.loads(arguments)))
+    case _:
+        raise ValueError(f"Function name '{function_name}' is not available.")
