@@ -46,7 +46,7 @@ class Configuration:
         Configuration.print_setting("Clients identified by API Key", ", ".join(self.clients))
         Configuration.print_setting(
             "Fixed client overwrite",
-            f"{self['fixed_client'] if self['fixed_client'] else '(not set)'}",
+            f"{self['fixed_client'] if 'fixed_client' in self and self['fixed_client'] else '(not set)'}",
         )
         if self["aoai/endpoints"]:
             Configuration.print_setting(

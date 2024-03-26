@@ -22,7 +22,7 @@ clients:
 # if set, the proxy will always use the specified client for all requests
 # notes: - this is required when Azure AD auth against Azure OpenAI is used because there is no
 #          other way to identify the client then.
-#        - leave empty ("") when API key authentication is used.
+#        - omit or leave empty ("") when API key authentication is used.
 # example: Some Team
 #fixed_client:
 
