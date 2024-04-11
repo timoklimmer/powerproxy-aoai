@@ -4,9 +4,10 @@ Script to test the proxy's ability to support response streaming when functions 
 Tested with openai package version 1.12.0.
 """
 
-from openai import AzureOpenAI
-import json
+# pylint: disable=not-an-iterable, duplicate-key
 
+import json
+from openai import AzureOpenAI
 
 client = AzureOpenAI(
     azure_endpoint="http://localhost",
@@ -14,40 +15,24 @@ client = AzureOpenAI(
     api_key="04ae14bc78184621d37f1ce57a52eb7",
 )
 
+deployment_name = "gpt-4-turbo"
 
-def search_hotels(location, max_price, features):
-    if location == "San Diego":
-        return json.dumps(
-            [
-                {
-                    "name": "Hotel 1",
-                    "price": 200,
-                    "features": ["beachfront", "free breakfast"],
-                },
-                {
-                    "name": "Hotel 2",
-                    "price": 250,
-                    "features": ["beachfront", "free breakfast"],
-                },
-            ]
-        )
-    else:
-        return json.dumps({"location": location, "temperature": "unknown"})
-
-
-def run_conversation():
-    messages = [
+function_name = ""
+arguments = ""
+response = client.chat.completions.create(
+    model=deployment_name,
+    messages=[
         {
             "role": "user",
-            "content": "Tell me a joke and then find beachfront hotels in San Diego for less than $300 a month with free breakfast.",
+            "content": "Book Palace Beach, starting Feb 14 to Feb 18.",
         }
-    ]
-    tools = [
+    ],
+    tools=[
         {
             "type": "function",
             "function": {
                 "name": "search_hotels",
-                "description": "Retrieves hotels from the search index based on the parameters provided",
+                "description": "Retrieves hotels from the search index based on the parameters provided.",
                 "parameters": {
                     "type": "object",
                     "properties": {
@@ -67,47 +52,59 @@ def run_conversation():
                     "required": ["location"],
                 },
             },
-        }
-    ]
-    response = client.chat.completions.create(
-        model="gpt4-turbo",
-        messages=messages,
-        tools=tools,
-        temperature=0,
-        tool_choice="auto",
-        stream=False,
-    )
-    response_message = response.choices[0].message
-    tool_calls = response_message.tool_calls
-    if tool_calls:
-        # Step 3: call the function
-        # Note: the JSON response may not always be valid; be sure to handle errors
-        available_functions = {
-            "search_hotels": search_hotels,
-        }  # only one function in this example, but you can have multiple
-        messages.append(response_message)  # extend conversation with assistant's reply
-        for tool_call in tool_calls:
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "book_hotel",
+                "description": "Books a hotel based on the parameters provided.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "name": {
+                            "type": "string",
+                            "description": "The name of the hotel (i.e. Palace Beach)",
+                        },
+                        "start_date": {
+                            "type": "string",
+                            "description": "The start date of the booking.",
+                        },
+                        "end_date": {
+                            "type": "string",
+                            "description": "The end date of the booking.",
+                        },
+                    },
+                    "required": ["name", "start_date", "end_date"],
+                },
+            },
+        },
+    ],
+    temperature=0,
+    tool_choice="auto",
+    stream=False,
+)
+
+def search_hotels(location, max_price, features):
+    """Searches for hotels."""
+    print(f"Searching hotels in {location} with max price {max_price} and {features}...")
+    print("TODO: Complete -- this function is only for demo purposes.")
+
+
+def book_hotel(name, start_date, end_date):
+    """Books a hotel."""
+    print(f"Booking hotel '{name}'. Start date: {start_date}, End date: {end_date}...")
+    print("TODO: Complete -- this function is only for demo purposes.")
+
+
+for choice in response.choices:
+    if choice.finish_reason != "stop" and choice.message.tool_calls:
+        for tool_call in choice.message.tool_calls:
             function_name = tool_call.function.name
-            function_to_call = available_functions[function_name]
-            function_args = json.loads(tool_call.function.arguments)
-            function_response = function_to_call(
-                location=function_args.get("location"),
-                max_price=function_args.get("max_price"),
-                features=function_args.get("features"),
-            )
-            messages.append(
-                {
-                    "tool_call_id": tool_call.id,
-                    "role": "tool",
-                    "name": function_name,
-                    "content": function_response,
-                }
-            )  # extend conversation with function response
-        second_response = client.chat.completions.create(
-            model="gpt4-turbo",
-            messages=messages,
-        )  # get a new response from the model where it can see the function response
-        return second_response
+            arguments = json.loads(tool_call.function.arguments)
+        if function_name == "search_hotels":
+            search_hotels(**arguments)
+        elif function_name == "book_hotel":
+            book_hotel(**arguments)
+        else:
+            raise ValueError(f"Function name '{function_name}' is not available.")
 
-
-print(run_conversation())
