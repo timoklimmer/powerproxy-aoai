@@ -8,12 +8,12 @@ from openai import AzureOpenAI
 
 client = AzureOpenAI(
     azure_endpoint="http://localhost",
-    api_version="2023-05-15",
+    api_version="2024-02-01",
     api_key="04ae14bc78184621d37f1ce57a52eb7",
 )
 
 response = client.chat.completions.create(
-    model="gpt-35-turbo",
+    model="gpt-4-turbo",
     messages=[
         {
             "role": "system",
