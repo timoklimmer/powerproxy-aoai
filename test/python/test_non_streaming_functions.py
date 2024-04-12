@@ -84,6 +84,7 @@ response = client.chat.completions.create(
     stream=False,
 )
 
+
 def search_hotels(location, max_price, features):
     """Searches for hotels."""
     print(f"Searching hotels in {location} with max price {max_price} and {features}...")
@@ -107,4 +108,3 @@ for choice in response.choices:
             book_hotel(**arguments)
         else:
             raise ValueError(f"Function name '{function_name}' is not available.")
-
