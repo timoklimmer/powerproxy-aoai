@@ -5,4 +5,4 @@ fastapi==0.110.2
 tiktoken==0.6.0
 azure-identity==1.16.0
 azure-monitor-ingestion==1.0.3
-redis[hiredis]==5.0.3
+redis[hiredis]==5.0.4
