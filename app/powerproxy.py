@@ -186,7 +186,7 @@ async def handle_request(request: Request, path: str):
         - {"Host", "host", "Content-Length", "content-length"}
     }
     client = None
-    if "fixed_client" in config and config["fixed_client"]:
+    if "fixed_client" in config.values_dict and config["fixed_client"]:
         client = config["fixed_client"]
     if "api-key" in headers:
         if headers["api-key"] not in config.key_client_map:
