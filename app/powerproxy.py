@@ -70,7 +70,9 @@ async def lifespan(app: FastAPI):
     if config.get("aoai/mock_response"):
 
         async def get_mock_response(request):
-            ms_to_wait_before_return = config.get("aoai/mock_response/ms_to_wait_before_return")
+            ms_to_wait_before_return = config.get(
+                "aoai/mock_response/ms_to_wait_before_return"
+            )
             if ms_to_wait_before_return:
                 ms_to_wait_before_return = float(ms_to_wait_before_return)
                 await asyncio.sleep(ms_to_wait_before_return / 1_000)
@@ -208,7 +210,10 @@ async def handle_request(request: Request, path: str):
         aoai_endpoint = app.state.aoai_endpoints[aoai_endpoint_name]
 
         # try next endpoint if this endpoint is blocked
-        if aoai_endpoint["next_request_not_before_timestamp_ms"] > get_current_timestamp_in_ms():
+        if (
+            aoai_endpoint["next_request_not_before_timestamp_ms"]
+            > get_current_timestamp_in_ms()
+        ):
             continue
 
         # try next endpoint if we have a non-streaming request and if we want to skip it to reserve
@@ -298,7 +303,9 @@ async def handle_request(request: Request, path: str):
             measure_aoai_roundtrip_time_ms(routing_slip)
             try:
                 routing_slip["body_dict_from_target"] = json.load(io.BytesIO(body))
-                foreach_plugin(config.plugins, "on_body_dict_from_target_available", routing_slip)
+                foreach_plugin(
+                    config.plugins, "on_body_dict_from_target_available", routing_slip
+                )
             except:
                 # eat any exception in case the response cannot be parsed
                 pass
@@ -307,7 +314,10 @@ async def handle_request(request: Request, path: str):
                 status_code=aoai_response.status_code,
                 headers=routing_slip["response_headers_from_target"],
             )
-            if "Transfer-Encoding" in response.headers and "Content-Length" in response.headers:
+            if (
+                "Transfer-Encoding" in response.headers
+                and "Content-Length" in response.headers
+            ):
                 del response.headers["Content-Length"]
             return response
         case True:
@@ -330,7 +340,9 @@ async def handle_request(request: Request, path: str):
                             )
                 measure_aoai_roundtrip_time_ms(routing_slip)
                 foreach_plugin(
-                    config.plugins, "on_end_of_target_response_stream_reached", routing_slip
+                    config.plugins,
+                    "on_end_of_target_response_stream_reached",
+                    routing_slip,
                 )
 
             return StreamingResponse(

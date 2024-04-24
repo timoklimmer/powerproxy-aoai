@@ -6,7 +6,7 @@
     "configurations": [
         {
             "name": "Debug powerproxy.py",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "cwd": "${workspaceFolder}/app",
             "program": "powerproxy.py",

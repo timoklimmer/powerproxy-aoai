@@ -67,7 +67,9 @@ class QueryDict(dict):
             is_last_element_in_path = i == len(keys_from_path) - 1
             if not key_from_path in parent_element:
                 parent_element[key_from_path] = {}
-            if not is_last_element_in_path and not isinstance(parent_element[key_from_path], dict):
+            if not is_last_element_in_path and not isinstance(
+                parent_element[key_from_path], dict
+            ):
                 raise ValueError(
                     (
                         "Cannot set value. All items on the way to the last element must be of "

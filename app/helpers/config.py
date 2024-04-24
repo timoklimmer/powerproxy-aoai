@@ -15,7 +15,9 @@ class Configuration:
         """Constructor."""
         self.values_dict = QueryDict(values_dict)
         self.clients = [client["name"] for client in self.get("clients")]
-        self.key_client_map = {client["key"]: client["name"] for client in self.get("clients")}
+        self.key_client_map = {
+            client["key"]: client["name"] for client in self.get("clients")
+        }
         self.plugin_names = [plugin["name"] for plugin in self.get("plugins")]
 
         # instantiate plugins
@@ -38,12 +40,18 @@ class Configuration:
     def get_client_settings(self, client):
         """Return the value of a client's setting."""
         return next(
-            (client_config for client_config in self["clients"] if client_config["name"] == client)
+            (
+                client_config
+                for client_config in self["clients"]
+                if client_config["name"] == client
+            )
         )
 
     def print(self):
         """Print the current configuration."""
-        Configuration.print_setting("Clients identified by API Key", ", ".join(self.clients))
+        Configuration.print_setting(
+            "Clients identified by API Key", ", ".join(self.clients)
+        )
         Configuration.print_setting(
             "Fixed client overwrite",
             f"{self['fixed_client'] if 'fixed_client' in self.values_dict and self['fixed_client'] else '(not set)'}",
@@ -59,7 +67,9 @@ class Configuration:
                 ),
             )
         if self["aoai/mock_response"]:
-            Configuration.print_setting("Azure OpenAI mock response", self["aoai/mock_response"])
+            Configuration.print_setting(
+                "Azure OpenAI mock response", self["aoai/mock_response"]
+            )
 
     @staticmethod
     def print_setting(name, value, level=0):
@@ -78,7 +88,9 @@ class Configuration:
         return Configuration(yaml.safe_load(yaml_string))
 
     @staticmethod
-    def from_env_var(env_var_name="POWERPROXY_CONFIG_STRING", skip_no_env_var_exception=False):
+    def from_env_var(
+        env_var_name="POWERPROXY_CONFIG_STRING", skip_no_env_var_exception=False
+    ):
         """Load configuration from environment variable."""
         if env_var_name in os.environ:
             return Configuration.from_yaml_string(os.environ[env_var_name])

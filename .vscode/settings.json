@@ -7,15 +7,11 @@
     "files.insertFinalNewline": true,
     "files.trimTrailingWhitespace": true,
     "[python]": {
-        "editor.defaultFormatter": "ms-python.black-formatter",
+        "editor.defaultFormatter": "charliermarsh.ruff",
         "editor.formatOnPaste": true,
         "editor.formatOnSave": true,
         "editor.formatOnSaveMode": "file"
     },
-    "black-formatter.args": [
-        "--line-length=100",
-        "--target-version=py311"
-    ],
     "pylint.args": [
         "--disable=bare-except,import-error,invalid-name,line-too-long,no-name-in-module,redefined-outer-name,relative-beyond-top-level,too-few-public-methods,too-many-arguments,too-many-instance-attributes,unused-argument,too-many-function-args"
     ]
