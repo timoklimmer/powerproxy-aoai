@@ -4,9 +4,8 @@ Script to test the proxy's ability to support response streaming when functions 
 Tested with openai package version 1.12.0.
 """
 
-# pylint: disable=not-an-iterable, duplicate-key
-
 import json
+
 from openai import AzureOpenAI
 
 client = AzureOpenAI(

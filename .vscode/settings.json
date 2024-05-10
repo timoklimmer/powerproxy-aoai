@@ -1,18 +1,36 @@
 {
+    "[python]": {
+        "editor.codeActionsOnSave": {
+            "editor.defaultFormatter": "charliermarsh.ruff",
+            "editor.formatOnPaste": "explicit",
+            "editor.formatOnSave": "explicit",
+            "editor.formatOnSaveMode": "file",
+            "source.organizeImports": "explicit"
+        },
+        "editor.defaultFormatter": "charliermarsh.ruff"
+    },
+    "editor.minimap.enabled": false,
     "editor.rulers": [
         {
-            "column": 100
+            "column": 120
         }
     ],
     "files.insertFinalNewline": true,
     "files.trimTrailingWhitespace": true,
-    "[python]": {
-        "editor.defaultFormatter": "charliermarsh.ruff",
-        "editor.formatOnPaste": true,
-        "editor.formatOnSave": true,
-        "editor.formatOnSaveMode": "file"
+    "notebook.codeActionsOnSave": {
+        "notebook.source.organizeImports": "explicit"
     },
+    "notebook.formatOnSave.enabled": true,
     "pylint.args": [
-        "--disable=bare-except,import-error,invalid-name,line-too-long,no-name-in-module,redefined-outer-name,relative-beyond-top-level,too-few-public-methods,too-many-arguments,too-many-instance-attributes,unused-argument,too-many-function-args"
-    ]
+        "--disable=bare-except,import-error,invalid-name,not-an-iterable,redefined-outer-name,relative-beyond-top-level,self-assigning-variable,too-few-public-methods,too-many-arguments,too-many-function-args,too-many-instance-attributes,too-many-locals,unused-argument",
+        "--max-line-length=120"
+    ],
+    "ruff.lint.args": [
+        "--line-length=120",
+        "--ignore=E722"
+    ],
+    "ruff.format.args": [
+        "--line-length=120",
+    ],
+    "ruff.organizeImports": false
 }

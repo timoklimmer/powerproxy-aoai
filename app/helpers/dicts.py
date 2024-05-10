@@ -37,7 +37,7 @@ class QueryDict(dict):
             if i == 0:
                 parent_element = dict.get(self, key_from_path, default)
                 continue
-            if i > 0 and i < path_length:
+            if 0 < i < path_length:
                 try:
                     parent_element = parent_element[key_from_path]
                     continue
@@ -65,7 +65,7 @@ class QueryDict(dict):
         is_last_element_in_path = False
         for i, key_from_path in enumerate(keys_from_path):
             is_last_element_in_path = i == len(keys_from_path) - 1
-            if not key_from_path in parent_element:
+            if key_from_path not in parent_element:
                 parent_element[key_from_path] = {}
             if not is_last_element_in_path and not isinstance(
                 parent_element[key_from_path], dict

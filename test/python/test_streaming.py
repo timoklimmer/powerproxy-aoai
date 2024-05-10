@@ -36,9 +36,7 @@ response = client.chat.completions.create(
     stream=True,
 )
 
-# pylint: disable=not-an-iterable
 for chunk in response:
-    # pylint: enable=not-an-iterable
     chunk: ChatCompletionChunk
     if len(chunk.choices) > 0:
         choice = chunk.choices[0]
