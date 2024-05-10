@@ -90,9 +90,7 @@ for chunk in client.chat.completions.create(
 
 def search_hotels(location, max_price, features):
     """Searches for hotels."""
-    print(
-        f"Searching hotels in {location} with max price {max_price} and {features}..."
-    )
+    print(f"Searching hotels in {location} with max price {max_price} and {features}...")
     print("TODO: Complete -- this function is only for demo purposes.")
 
 

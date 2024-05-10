@@ -1,14 +1,11 @@
 {
     "[python]": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "charliermarsh.ruff",
         "editor.codeActionsOnSave": {
-            "editor.defaultFormatter": "charliermarsh.ruff",
-            "editor.formatOnPaste": "explicit",
-            "editor.formatOnSave": "explicit",
-            "editor.formatOnSaveMode": "file",
-            "source.organizeImports": "explicit"
-        },
-        "editor.defaultFormatter": "charliermarsh.ruff"
-    },
+          "source.organizeImports": "explicit"
+        }
+      },
     "editor.minimap.enabled": false,
     "editor.rulers": [
         {

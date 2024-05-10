@@ -42,10 +42,7 @@ parser.add_argument(
     "--port",
     type=int,
     default=80,
-    help=(
-        "Port where the proxy runs. Ports <= 1024 may need special permissions in Linux. "
-        "Default: 80."
-    ),
+    help=("Port where the proxy runs. Ports <= 1024 may need special permissions in Linux. " "Default: 80."),
 )
 args, unknown = parser.parse_known_args()
 
@@ -69,9 +66,7 @@ async def lifespan(app: FastAPI):
     if config.get("aoai/mock_response"):
 
         async def get_mock_response(request):
-            ms_to_wait_before_return = config.get(
-                "aoai/mock_response/ms_to_wait_before_return"
-            )
+            ms_to_wait_before_return = config.get("aoai/mock_response/ms_to_wait_before_return")
             if ms_to_wait_before_return:
                 ms_to_wait_before_return = float(ms_to_wait_before_return)
                 await asyncio.sleep(ms_to_wait_before_return / 1_000)
@@ -183,8 +178,7 @@ async def handle_request(request: Request, path: str):
     #          we need to make sure that the proxy continues to work.
     headers = {
         key: request.headers[key]
-        for key in set(request.headers.keys())
-        - {"Host", "host", "Content-Length", "content-length"}
+        for key in set(request.headers.keys()) - {"Host", "host", "Content-Length", "content-length"}
     }
     client = None
     if "fixed_client" in config.values_dict and config["fixed_client"]:
@@ -209,10 +203,7 @@ async def handle_request(request: Request, path: str):
         aoai_endpoint = app.state.aoai_endpoints[aoai_endpoint_name]
 
         # try next endpoint if this endpoint is blocked
-        if (
-            aoai_endpoint["next_request_not_before_timestamp_ms"]
-            > get_current_timestamp_in_ms()
-        ):
+        if aoai_endpoint["next_request_not_before_timestamp_ms"] > get_current_timestamp_in_ms():
             continue
 
         # try next endpoint if we have a non-streaming request and if we want to skip it to reserve
@@ -257,9 +248,7 @@ async def handle_request(request: Request, path: str):
             # block endpoint for some time, either according to the time given by AOAI or, if not
             # available, for 10 seconds
             waiting_time_ms_until_next_request = (
-                int(aoai_response.headers["retry-after-ms"])
-                if "retry-after-ms" in aoai_response.headers
-                else 10_000
+                int(aoai_response.headers["retry-after-ms"]) if "retry-after-ms" in aoai_response.headers else 10_000
             )
             aoai_endpoint["next_request_not_before_timestamp_ms"] = (
                 get_current_timestamp_in_ms() + waiting_time_ms_until_next_request
@@ -286,14 +275,12 @@ async def handle_request(request: Request, path: str):
 
     # determine if it's actually an event stream or not
     routing_slip["is_event_stream"] = (
-        "content-type" in aoai_response.headers
-        and aoai_response.headers["content-type"] == "text/event-stream"
+        "content-type" in aoai_response.headers and aoai_response.headers["content-type"] == "text/event-stream"
     )
 
     # return different response types depending if it's an event stream or not
     routing_slip["response_headers_from_target"] = {
-        header_item[0].decode(): header_item[1].decode()
-        for header_item in aoai_response.headers.raw
+        header_item[0].decode(): header_item[1].decode() for header_item in aoai_response.headers.raw
     }
     match routing_slip["is_event_stream"]:
         case False:
@@ -302,9 +289,7 @@ async def handle_request(request: Request, path: str):
             measure_aoai_roundtrip_time_ms(routing_slip)
             try:
                 routing_slip["body_dict_from_target"] = json.load(io.BytesIO(body))
-                foreach_plugin(
-                    config.plugins, "on_body_dict_from_target_available", routing_slip
-                )
+                foreach_plugin(config.plugins, "on_body_dict_from_target_available", routing_slip)
             except:
                 # eat any exception in case the response cannot be parsed
                 pass
@@ -313,10 +298,7 @@ async def handle_request(request: Request, path: str):
                 status_code=aoai_response.status_code,
                 headers=routing_slip["response_headers_from_target"],
             )
-            if (
-                "Transfer-Encoding" in response.headers
-                and "Content-Length" in response.headers
-            ):
+            if "Transfer-Encoding" in response.headers and "Content-Length" in response.headers:
                 del response.headers["Content-Length"]
             return response
         case True:
