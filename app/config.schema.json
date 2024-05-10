@@ -10,7 +10,8 @@
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/Client"
-                    }
+                    },
+                    "minItems": 1
                 },
                 "fixed_client": {
                     "type": "string"
@@ -80,7 +81,8 @@
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/Endpoint"
-                    }
+                    },
+                    "minItems": 1
                 },
                 "mock_response": {
                     "$ref": "#/definitions/MockResponse"
