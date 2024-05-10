@@ -1,0 +1,142 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$ref": "#/definitions/PowerProxyConfiguration",
+    "definitions": {
+        "PowerProxyConfiguration": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+                "clients": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Client"
+                    }
+                },
+                "fixed_client": {
+                    "type": "string"
+                },
+                "plugins": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Plugin"
+                    }
+                },
+                "aoai": {
+                    "$ref": "#/definitions/Aoai"
+                },
+                "region": {
+                    "type": "string"
+                },
+                "resource_group": {
+                    "type": "string"
+                },
+                "unique_prefix": {
+                    "type": "string"
+                },
+                "user_assigned_managed_identity_client_id": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "aoai"
+            ]
+        },
+        "Client": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "key": {
+                    "type": "string"
+                },
+                "max_tokens_per_minute_in_k": {
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "key",
+                "name"
+            ]
+        },
+        "Plugin": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "name"
+            ]
+        },
+        "Aoai": {
+            "type": "object",
+            "properties": {
+                "endpoints": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Endpoint"
+                    }
+                },
+                "mock_response": {
+                    "$ref": "#/definitions/MockResponse"
+                }
+            },
+            "oneOf": [
+                {
+                    "required": ["endpoints"]
+                },
+                {
+                    "required": ["mock_response"]
+                }
+            ]
+        },
+        "Endpoint": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string",
+                    "format": "uri",
+                    "qt-uri-protocols": [
+                        "https"
+                    ]
+                },
+                "key": {
+                    "type": "string"
+                },
+                "non_streaming_fraction": {
+                    "type": "number"
+                }
+            },
+            "required": [
+                "key",
+                "name",
+                "url"
+            ]
+        },
+        "MockResponse": {
+            "type": "object",
+            "properties": {
+                "ms_to_wait_before_return": {
+                    "type": "integer"
+                },
+                "json": {
+                    "$ref": "#/definitions/JSON"
+                }
+            },
+            "required": [
+                "json"
+            ]
+        },
+        "JSON": {
+            "type": "object"
+        }
+    }
+}

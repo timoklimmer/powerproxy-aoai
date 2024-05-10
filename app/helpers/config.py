@@ -2,6 +2,7 @@
 
 import os
 
+import jsonschema
 import yaml
 from plugins.base import PowerProxyPlugin, foreach_plugin
 
@@ -13,17 +14,24 @@ class Configuration:
 
     def __init__(self, values_dict):
         """Constructor."""
+        self._validate_values_dict(values_dict)
         self.values_dict = QueryDict(values_dict)
         self.clients = [client["name"] for client in self.get("clients")]
         self.key_client_map = {client["key"]: client["name"] for client in self.get("clients")}
-        self.plugin_names = [plugin["name"] for plugin in self.get("plugins")]
+        self.plugin_names = [plugin["name"] for plugin in self.get("plugins") or []]
 
         # instantiate plugins
         self.plugins = [
             PowerProxyPlugin.get_plugin_instance(plugin_config["name"], self, QueryDict(plugin_config))
-            for plugin_config in self.get("plugins")
+            for plugin_config in self.get("plugins") or []
         ]
         foreach_plugin(self.plugins, "on_plugin_instantiated")
+
+    def _validate_values_dict(self, values_dict):
+        """Validate the given configuration and see if it corresponds to the expected schema."""
+        with open("config.schema.json", "r", encoding="utf-8") as config_schema_file:
+            schema = yaml.safe_load(config_schema_file)
+        jsonschema.validate(instance=values_dict, schema=schema)
 
     def __getitem__(self, key):
         """Dunder method to get config value via ["..."] syntax."""

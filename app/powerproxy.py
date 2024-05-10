@@ -91,7 +91,9 @@ async def lifespan(app: FastAPI):
                 "key": endpoint["key"],
                 "client": httpx.AsyncClient(base_url=endpoint["url"]),
                 "next_request_not_before_timestamp_ms": 0,
-                "non_streaming_fraction": float(endpoint["non_streaming_fraction"]),
+                "non_streaming_fraction": float(
+                    endpoint["non_streaming_fraction"] if "non_streaming_fraction" in endpoint else 1
+                ),
             }
             for endpoint in config["aoai/endpoints"]
         }
