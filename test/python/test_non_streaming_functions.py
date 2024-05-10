@@ -86,14 +86,14 @@ response = client.chat.completions.create(
 
 def search_hotels(location, max_price, features):
     """Searches for hotels."""
-    print(f"Searching hotels in {location} with max price {max_price} and {features}...")
-    print("TODO: Complete -- this function is only for demo purposes.")
+    print("Hi there -- this is function search_hotels(). I was invoked with the following commands:")
+    print(f"Location: {location}, max price {max_price}, features: {features}")
 
 
 def book_hotel(name, start_date, end_date):
     """Books a hotel."""
-    print(f"Booking hotel '{name}'. Start date: {start_date}, End date: {end_date}...")
-    print("TODO: Complete -- this function is only for demo purposes.")
+    print("Hi there -- this is function book_hotel(). I was invoked with the following commands:")
+    print(f"Booking hotel '{name}'. Start date: {start_date}, End date: {end_date}")
 
 
 for choice in response.choices:

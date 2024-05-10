@@ -12,8 +12,10 @@ client = AzureOpenAI(
     api_key="04ae14bc78184621d37f1ce57a52eb7",
 )
 
+deployment_name = "gpt-4-turbo"
+
 response = client.chat.completions.create(
-    model="gpt-4-turbo",
+    model=deployment_name,
     messages=[
         {
             "role": "system",

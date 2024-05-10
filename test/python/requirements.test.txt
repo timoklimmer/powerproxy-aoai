@@ -1,1 +1,1 @@
-openai==1.12
+openai==1.28
