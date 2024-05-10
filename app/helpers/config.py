@@ -18,7 +18,11 @@ class Configuration:
         self._validate_values_dict(values_dict)
         self.values_dict = QueryDict(values_dict)
         self.clients = [client["name"] for client in self.get("clients")]
-        self.key_client_map = {client["key"]: client["name"] for client in self.get("clients")}
+        self.entra_id_client = None
+        for client in self.get("clients"):
+            if "uses_entra_id_auth" in client and client["uses_entra_id_auth"]:
+                self.entra_id_client = client
+        self.key_client_map = {client["key"]: client["name"] for client in self.get("clients") if "key" in client}
         self.plugin_names = [plugin["name"] for plugin in self.get("plugins") or []]
 
         # instantiate plugins
@@ -55,10 +59,10 @@ class Configuration:
 
     def print(self):
         """Print the current configuration."""
-        Configuration.print_setting("Clients identified by API Key", ", ".join(self.clients))
+        Configuration.print_setting("Clients", ", ".join(self.clients))
         Configuration.print_setting(
-            "Fixed client overwrite",
-            f"{self['fixed_client'] if 'fixed_client' in self.values_dict and self['fixed_client'] else '(not set)'}",
+            "Entra ID Client",
+            f"{self.entra_id_client['name'] if self.entra_id_client else '(not set)'}",
         )
         if self["aoai/endpoints"]:
             Configuration.print_setting(

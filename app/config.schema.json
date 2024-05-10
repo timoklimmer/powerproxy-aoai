@@ -1,5 +1,5 @@
 {
-    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$schema": "http://json-schema.org/draft/2019-09/schema#",
     "$ref": "#/definitions/PowerProxyConfiguration",
     "definitions": {
         "PowerProxyConfiguration": {
@@ -11,10 +11,20 @@
                     "items": {
                         "$ref": "#/definitions/Client"
                     },
-                    "minItems": 1
-                },
-                "fixed_client": {
-                    "type": "string"
+                    "minItems": 1,
+                    "contains": {
+                        "type": "object",
+                        "properties": {
+                            "uses_entra_id_auth": {
+                                "const": true
+                            }
+                        },
+                        "required": [
+                            "uses_entra_id_auth"
+                        ]
+                    },
+                    "minContains": 0,
+                    "maxContains": 1
                 },
                 "plugins": {
                     "type": "array",
@@ -40,6 +50,24 @@
             },
             "required": [
                 "aoai"
+            ],
+            "allOf": [
+                {
+                    "not": {
+                        "required": [
+                            "fixed_client"
+                        ],
+                        "errorMessage": "'fixed_client' is not supported anymore. Please remove this field and set 'uses_entra_id_auth: true' for one single team to re-enable Entra ID auth."
+                    }
+                },
+                {
+                    "not": {
+                        "required": [
+                            "FIXED_CLIENT"
+                        ],
+                        "errorMessage": "'FIXED_CLIENT is not supported anymore. Please remove this field and set 'uses_entra_id_auth: true' for one single team to re-enable Entra ID auth."
+                    }
+                }
             ]
         },
         "Client": {
@@ -58,9 +86,19 @@
                     "type": "integer"
                 }
             },
-            "required": [
-                "key",
-                "name"
+            "oneOf": [
+                {
+                    "required": [
+                        "name",
+                        "key"
+                    ]
+                },
+                {
+                    "required": [
+                        "name",
+                        "uses_entra_id_auth"
+                    ]
+                }
             ]
         },
         "Plugin": {
@@ -90,10 +128,14 @@
             },
             "oneOf": [
                 {
-                    "required": ["endpoints"]
+                    "required": [
+                        "endpoints"
+                    ]
                 },
                 {
-                    "required": ["mock_response"]
+                    "required": [
+                        "mock_response"
+                    ]
                 }
             ]
         },

@@ -1,30 +1,28 @@
-# the teams or use cases accessing Azure OpenAI (aka. "clients") and their keys
+# the teams or use cases accessing Azure OpenAI (aka. "clients")
 # notes: - each client must have a unique key. PowerProxy identifies clients by the given key.
-#        - leave empty if Azure AD auth against Azure OpenAI is used.
+#        - one and only one client can use "uses_entra_id_auth: true" instead of a key. this client is used for all
+#          requests where an Entra ID/Azure AD authentication shall be used instead of an API key authentication.
 clients:
   - name: Team 1
     description: An example team named 'Team 1'.
     key: 28ef59ae30342978f81c4ad96ce47ab
-    max_tokens_per_minute_in_k: 10
+    max_tokens_per_minute_in_k: 20
   - name: Team 2
     description: An example team named 'Team 2'.
     key: 1113456789abcdef0123456789abcde
-    max_tokens_per_minute_in_k: 10
+    max_tokens_per_minute_in_k: 30
   - name: Test Script Client 1
-    description: Used by the included test scripts. Remove this client in production scenarios.
+    description: Used by the included test scripts.
     key: 04ae14bc78184621d37f1ce57a52eb7
-    max_tokens_per_minute_in_k: 10
+    max_tokens_per_minute_in_k: 5
   - name: Test Script Client 2
-    description: Used by the included test scripts. Remove this client in production scenarios.
+    description: Used by the included test scripts.
     key: 72bd81ef32763530b29e3da63d46ad6
+    max_tokens_per_minute_in_k: 5
+  - name: Entra ID Auth Client
+    description: Client used whenever a client authenticates via Entra ID / Azure AD.
+    uses_entra_id_auth: true
     max_tokens_per_minute_in_k: 10
-
-# if set, the proxy will always use the specified client for all requests
-# notes: - this is required when Azure AD auth against Azure OpenAI is used because there is no
-#          other way to identify the client then.
-#        - omit or leave empty ("") when API key authentication is used.
-# example: Some Team
-#fixed_client:
 
 # defines the plugins enabled for the proxy
 plugins:

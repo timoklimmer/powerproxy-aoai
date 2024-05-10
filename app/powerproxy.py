@@ -167,15 +167,13 @@ async def handle_request(request: Request, path: str):
     foreach_plugin(config.plugins, "on_new_request_received", routing_slip)
 
     # identify client
-    # notes: - When API authentication is used, we get an API key in header 'api-key'. This
-    #          would usually be the API key for Azure Open AI, but we configure and use
-    #          client-specific keys here for the proxy to identify the client. We will replace the
-    #          API key against the real AOAI key later.
-    #        - For Azure AD authentication, we should get no API key but an Azure AD token in
-    #          header 'Authorization'. Unfortunately, we cannot interpret or modify that token,
-    #          so we need another mechanism to identify clients. In that case, we need a
-    #          separate instance of PowerProxy for each client, whereby each client uses a fixed
-    #          client.
+    # notes: - When API authentication is used, we get an API key in header 'api-key'. This would usually be the API key
+    #          for Azure Open AI, but we configure and use client-specific keys here for the proxy to identify the
+    #          client. We will replace the API key against the real AOAI key later.
+    #        - For Entra ID/Azure AD authentication, we should get no API key but a token in header 'authorization'.
+    #          Unfortunately, we cannot interpret or modify that token, so we need another mechanism to identify
+    #          clients. In that case, we need a separate instance of PowerProxy for each client, and we use the client
+    #          from the config that has 'uses_entra_id_auth: true'.
     #        - Some requests may neither contain an API key or an Azure AD token. In that case,
     #          we need to make sure that the proxy continues to work.
     headers = {
@@ -183,8 +181,6 @@ async def handle_request(request: Request, path: str):
         for key in set(request.headers.keys()) - {"Host", "host", "Content-Length", "content-length"}
     }
     client = None
-    if "fixed_client" in config.values_dict and config["fixed_client"]:
-        client = config["fixed_client"]
     if "api-key" in headers:
         if headers["api-key"] not in config.key_client_map:
             raise ValueError(
@@ -195,6 +191,8 @@ async def handle_request(request: Request, path: str):
                 )
             )
         client = config.key_client_map[headers["api-key"]] if client is None else client
+    if "authorization" in headers:
+        client = config.entra_id_client["name"]
     routing_slip["client"] = client
     if client:
         foreach_plugin(config.plugins, "on_client_identified", routing_slip)
@@ -221,8 +219,9 @@ async def handle_request(request: Request, path: str):
             continue
 
         # replace API key against real API key from AOAI, but only if the request has an API key
-        # note: intentionally not raising an exception here to support requests using Azure AD/
-        #       Entra ID authentication.
+        # note: intentionally not raising an exception here to support requests using Azure AD/Entra ID authentication.
+        #       Entra ID requests miss an api-key header but have an Authorization header, and we pass that as is, so
+        #       AOAI will do the authentication then.
         if "api-key" in headers:
             headers["api-key"] = aoai_endpoint["key"] or ""
 
