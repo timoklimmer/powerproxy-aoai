@@ -160,7 +160,7 @@ async def handle_request(request: Request, path: str):
         routing_slip["incoming_request_body_dict"] = await request.json()
     except:
         pass
-    routing_slip["is_non_streaming_response_requested"] = not (
+    routing_slip["is_non_streaming_response_requested"] = routing_slip["incoming_request_body_dict"] and not (
         "stream" in routing_slip["incoming_request_body_dict"]
         and str(routing_slip["incoming_request_body_dict"]["stream"]).lower() == "true"
     )
@@ -183,11 +183,16 @@ async def handle_request(request: Request, path: str):
     client = None
     if "api-key" in headers:
         if headers["api-key"] not in config.key_client_map:
-            raise ValueError(
-                (
-                    "The provided API key is not a valid PowerProxy key. Ensure that the "
-                    "'api-key' header contains valid API key from the PowerProxy's "
-                    "configuration."
+            raise ImmediateResponseException(
+                Response(
+                    content=json.dumps(
+                        {
+                            "error": "The provided API key is not a valid PowerProxy key. Ensure that the 'api-key' "
+                            "header contains a valid API key from the PowerProxy's configuration."
+                        }
+                    ),
+                    media_type="application/json",
+                    status_code=status.HTTP_401_UNAUTHORIZED,
                 )
             )
         client = config.key_client_map[headers["api-key"]] if client is None else client
@@ -265,7 +270,10 @@ async def handle_request(request: Request, path: str):
     if aoai_response is None:
         raise ImmediateResponseException(
             Response(
-                content="Could not find any endpoint with remaining capacity. Try again later.",
+                content=json.dumps(
+                    {"message": "Could not find any endpoint with remaining capacity. Try again later."}
+                ),
+                media_type="application/json",
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             )
         )

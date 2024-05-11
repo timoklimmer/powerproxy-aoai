@@ -1,5 +1,6 @@
 """Declares a plugin which limits the usage rate for clients."""
 
+import json
 import time
 
 import redis
@@ -59,7 +60,8 @@ class LimitUsage(TokenCountingPlugin):
         if current_minute_from_cache == current_minute and current_budget_from_cache <= 0:
             raise ImmediateResponseException(
                 Response(
-                    content=f"Too many requests for client '{client}'. Try again later.",
+                    content=json.dumps({"message": f"Too many requests for client '{client}'. Try again later."}),
+                    media_type="application/json",
                     status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 )
             )
@@ -94,15 +96,17 @@ class LimitUsage(TokenCountingPlugin):
             if "max_tokens_per_minute_in_k" not in client_settings:
                 raise ImmediateResponseException(
                     Response(
-                        content=(
-                            f"Configuration for client '{client}' misses a "
-                            "'max_tokens_per_minute_in_k' setting. This needs to be set when the "
-                            "LimitUsage plugin is enabled."
+                        content=json.dumps(
+                            {
+                                "error": (
+                                    f"Configuration for client '{client}' misses a max_tokens_per_minute_in_k' setting."
+                                    "This needs to be set when the LimitUsage plugin is enabled."
+                                )
+                            }
                         ),
+                        media_type="application/json",
                         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     )
                 )
-            self.configured_max_tpms[client] = int(
-                float(client_settings["max_tokens_per_minute_in_k"]) * 1000
-            )
+            self.configured_max_tpms[client] = int(float(client_settings["max_tokens_per_minute_in_k"]) * 1000)
         return self.configured_max_tpms[client]
