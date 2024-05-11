@@ -24,7 +24,7 @@ args = parser.parse_args()
 with open(args.config_file, "r", encoding="utf-8") as config_file:
     config_values_dict = yaml.safe_load(config_file)
 
-with open("config.schema.json", "r", encoding="utf-8") as config_schema_file:
+with open("app/config.schema.json", "r", encoding="utf-8") as config_schema_file:
     schema = yaml.safe_load(config_schema_file)
 
 
