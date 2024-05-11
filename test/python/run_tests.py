@@ -7,8 +7,24 @@ Notes: - Whenever a script raises an exception, this script will stop automatica
          which makes testing/demoing more difficult.
 """
 
+import argparse
 import os
 import subprocess
+
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    "--powerproxy-endpoint", type=str, default="http://localhost", help="Path to PowerProxy/Azure OpenAI endpoint"
+)
+parser.add_argument(
+    "--api-key", type=str, default="04ae14bc78184621d37f1ce57a52eb7", help="API key to access PowerProxy"
+)
+parser.add_argument(
+    "--deployment-name", type=str, default="gpt-4-turbo", help="Name of Azure OpenAI deployment to test"
+)
+parser.add_argument(
+    "--api-version", type=str, default="2024-02-01", help="API version to use when accessing Azure OpenAI"
+)
+args = parser.parse_args()
 
 for test_filename in sorted(os.listdir(os.getcwd())):
     if test_filename.startswith("test_"):
@@ -16,7 +32,22 @@ for test_filename in sorted(os.listdir(os.getcwd())):
         print("-" * len(header))
         print(f"Running test file '{test_filename}'...")
         print("-" * len(header))
-        with subprocess.Popen(["python", test_filename], stdout=subprocess.PIPE, stderr=subprocess.STDOUT) as process:
+        with subprocess.Popen(
+            [
+                "python",
+                test_filename,
+                "--powerproxy-endpoint",
+                args.powerproxy_endpoint,
+                "--api-key",
+                args.api_key,
+                "--deployment-name",
+                args.deployment_name,
+                "--api-version",
+                args.api_version,
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        ) as process:
             for line in iter(process.stdout.readline, b""):
                 print(line.decode(), end="")
             process.stdout.close()
