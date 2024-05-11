@@ -10,7 +10,6 @@ import jsonschema
 import yaml
 from jsonschema.exceptions import SchemaError, ValidationError
 
-## define script arguments
 parser = argparse.ArgumentParser()
 # --config-file
 parser.add_argument(
