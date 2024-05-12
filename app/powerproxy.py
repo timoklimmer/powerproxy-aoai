@@ -215,11 +215,11 @@ async def handle_request(request: Request, path: str):
         # resources for streaming requests
         if (
             routing_slip["is_non_streaming_response_requested"]
+            and aoai_endpoint["non_streaming_fraction"] != 1
             and (
                 aoai_endpoint["non_streaming_fraction"] == 0
                 or random.random() > aoai_endpoint["non_streaming_fraction"]
             )
-            and aoai_endpoint["non_streaming_fraction"] != 1
         ):
             continue
 
