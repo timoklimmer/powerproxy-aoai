@@ -160,8 +160,8 @@
                     "minimum": 0,
                     "maximum": 1
                 },
-                "deployments": {
-                    "$ref": "#/definitions/Deployments"
+                "virtual_deployments": {
+                    "$ref": "#/definitions/VirtualDeployments"
                 }
             },
             "required": [
@@ -169,14 +169,14 @@
                 "url"
             ]
         },
-        "Deployments": {
+        "VirtualDeployments": {
             "type": "array",
             "items": {
-                "$ref": "#/definitions/Deployment"
+                "$ref": "#/definitions/VirtualDeployment"
             },
             "minItems": 1
         },
-        "Deployment": {
+        "VirtualDeployment": {
             "type": "object",
             "properties": {
                 "name": {
@@ -185,7 +185,7 @@
                 "standins": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/Standin"
+                        "$ref": "#/definitions/StandinDeployment"
                     },
                     "minItems": 1
                 }
@@ -195,7 +195,7 @@
                 "standins"
             ]
         },
-        "Standin": {
+        "StandinDeployment": {
             "type": "object",
             "properties": {
                 "name": {
