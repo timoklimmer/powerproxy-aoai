@@ -182,20 +182,17 @@
                 "name": {
                     "type": "string"
                 },
-                "non_streaming_fraction": {
-                    "type": "number",
-                    "minimum": 0,
-                    "maximum": 1
-                },
                 "standins": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/Standin"
-                    }
+                    },
+                    "minItems": 1
                 }
             },
             "required": [
-                "name"
+                "name",
+                "standins"
             ]
         },
         "Standin": {
