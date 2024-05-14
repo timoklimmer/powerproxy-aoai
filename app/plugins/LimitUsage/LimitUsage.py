@@ -99,8 +99,8 @@ class LimitUsage(TokenCountingPlugin):
                         content=json.dumps(
                             {
                                 "error": (
-                                    f"Configuration for client '{client}' misses a max_tokens_per_minute_in_k' setting."
-                                    "This needs to be set when the LimitUsage plugin is enabled."
+                                    f"Configuration for client '{client}' misses a 'max_tokens_per_minute_in_k' "
+                                    "setting. This needs to be set when the LimitUsage plugin is enabled."
                                 )
                             }
                         ),
