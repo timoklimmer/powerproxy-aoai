@@ -7,25 +7,31 @@ clients:
     description: An example team named 'Team 1'.
     key: 28ef59ae30342978f81c4ad96ce47ab
     max_tokens_per_minute_in_k: 20
+    deployments_allowed: gpt-35-turbo, gpt-4-turbo
   - name: Team 2
     description: An example team named 'Team 2'.
     key: 1113456789abcdef0123456789abcde
     max_tokens_per_minute_in_k: 30
+    deployments_allowed: gpt-35-turbo, gpt-4-turbo
   - name: Test Script Client 1
     description: Used by the included test scripts.
     key: 04ae14bc78184621d37f1ce57a52eb7
     max_tokens_per_minute_in_k: 5
+    deployments_allowed: gpt-35-turbo, gpt-4-turbo
   - name: Test Script Client 2
     description: Used by the included test scripts.
     key: 72bd81ef32763530b29e3da63d46ad6
     max_tokens_per_minute_in_k: 5
+    deployments_allowed: gpt-35-turbo, gpt-4-turbo
   - name: Entra ID Auth Client
     description: Client used whenever a client authenticates via Entra ID / Azure AD.
     uses_entra_id_auth: true
     max_tokens_per_minute_in_k: 10
+    deployments_allowed: gpt-35-turbo, gpt-4-turbo
 
 # defines the plugins enabled for the proxy
 plugins:
+  - name: AllowDeployments
   - name: LimitUsage
     # remove the redis field if no redis synchronization is desired
     # note: do that only in case of a single PowerProxy worker where no synchronization is needed
