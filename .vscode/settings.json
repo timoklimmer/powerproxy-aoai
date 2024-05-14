@@ -19,7 +19,7 @@
     },
     "notebook.formatOnSave.enabled": true,
     "pylint.args": [
-        "--disable=bare-except,import-error,invalid-name,not-an-iterable,redefined-outer-name,relative-beyond-top-level,self-assigning-variable,too-few-public-methods,too-many-arguments,too-many-function-args,too-many-instance-attributes,too-many-locals,unused-argument",
+        "--disable=bare-except,import-error,invalid-name,not-an-iterable,redefined-outer-name,relative-beyond-top-level,self-assigning-variable,too-few-public-methods,too-many-arguments,too-many-branches,too-many-function-args,too-many-instance-attributes,too-many-locals,too-many-statements,unused-argument",
         "--max-line-length=120"
     ],
     "ruff.format.args": [
