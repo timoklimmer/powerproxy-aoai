@@ -12,7 +12,7 @@ import json
 import random
 import time
 from contextlib import asynccontextmanager
-from datetime import datetime
+from datetime import datetime, timezone
 
 import httpx
 import uvicorn
@@ -150,7 +150,7 @@ async def handle_request(request: Request, path: str):
     """Handle any incoming request."""
     # create a new routing slip, populate it with some variables and tell plugins about new request
     routing_slip = {
-        "request_received_utc": datetime.utcnow(),
+        "request_received_utc": datetime.now(timezone.utc),
         "incoming_request": request,
         "incoming_request_body": await request.body(),
         "path": path,
@@ -174,8 +174,8 @@ async def handle_request(request: Request, path: str):
     #          Unfortunately, we cannot interpret or modify that token, so we need another mechanism to identify
     #          clients. In that case, we need a separate instance of PowerProxy for each client, and we use the client
     #          from the config that has 'uses_entra_id_auth: true'.
-    #        - Some requests may neither contain an API key or an Azure AD token. In that case,
-    #          we need to make sure that the proxy continues to work.
+    #        - Some requests may neither contain an API key nor an Azure AD token. In that case, we need to make sure
+    #          that the proxy continues to work.
     headers = {
         key: request.headers[key]
         for key in set(request.headers.keys()) - {"Host", "host", "Content-Length", "content-length"}
