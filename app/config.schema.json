@@ -156,13 +156,62 @@
                     "type": "string"
                 },
                 "non_streaming_fraction": {
-                    "type": "number"
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                },
+                "deployments": {
+                    "$ref": "#/definitions/Deployments"
                 }
             },
             "required": [
-                "key",
                 "name",
                 "url"
+            ]
+        },
+        "Deployments": {
+            "type": "array",
+            "items": {
+                "$ref": "#/definitions/Deployment"
+            },
+            "minItems": 1
+        },
+        "Deployment": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "non_streaming_fraction": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                },
+                "standins": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Standin"
+                    }
+                }
+            },
+            "required": [
+                "name"
+            ]
+        },
+        "Standin": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "non_streaming_fraction": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                }
+            },
+            "required": [
+                "name"
             ]
         },
         "MockResponse": {

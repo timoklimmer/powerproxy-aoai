@@ -88,13 +88,13 @@ async def lifespan(app: FastAPI):
         app.state.aoai_endpoints = {
             endpoint["name"]: {
                 "url": endpoint["url"],
-                "key": endpoint["key"],
                 "client": httpx.AsyncClient(base_url=endpoint["url"]),
                 "next_request_not_before_timestamp_ms": 0,
                 "non_streaming_fraction": float(
                     endpoint["non_streaming_fraction"] if "non_streaming_fraction" in endpoint else 1
                 ),
             }
+            | ({"key": endpoint["key"]} if "key" in endpoint else {})
             for endpoint in config["aoai/endpoints"]
         }
     if len(app.state.aoai_endpoints) == 0:
@@ -223,12 +223,16 @@ async def handle_request(request: Request, path: str):
         ):
             continue
 
-        # replace API key against real API key from AOAI, but only if the request has an API key
+        # replace API key against real API key from AOAI, but only if the request has an API key and if we have an API
+        # key for the real AOAI endpoint
         # note: intentionally not raising an exception here to support requests using Azure AD/Entra ID authentication.
         #       Entra ID requests miss an api-key header but have an Authorization header, and we pass that as is, so
         #       AOAI will do the authentication then.
         if "api-key" in headers:
-            headers["api-key"] = aoai_endpoint["key"] or ""
+            if "key" in aoai_endpoint:
+                headers["api-key"] = aoai_endpoint["key"] or ""
+            else:
+                del headers["api-key"]
 
         # remember endpoint and request start time
         routing_slip["aoai_endpoint_name"] = aoai_endpoint_name
