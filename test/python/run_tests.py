@@ -58,4 +58,4 @@ for test_filename in sorted(os.listdir(os.getcwd())):
         else:
             print(f"\n✅ Test '{test_filename}' successful.")
 
-        print("\n")
+        print("\n🎉 CONGRATULATIONS -- if the script has reached to here, all tests were successful.")
