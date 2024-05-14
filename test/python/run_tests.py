@@ -55,7 +55,8 @@ for test_filename in sorted(os.listdir(os.getcwd())):
         if process.returncode != 0:
             print(f"\n❌ Test '{test_filename}' failed. See the stack trace above for details.")  # pylint: disable=broad-exception-raised
             break
-        else:
-            print(f"\n✅ Test '{test_filename}' successful.")
+        print(f"\n✅ Test '{test_filename}' successful.")
+
+        print("")
 
 print("\n🎉 CONGRATULATIONS -- if the script has reached to here, all tests were successful.")
