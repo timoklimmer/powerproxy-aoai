@@ -65,19 +65,42 @@ class Configuration:
             f"{self.entra_id_client['name'] if self.entra_id_client else '(not set)'}",
         )
         if self["aoai/endpoints"]:
-            Configuration.print_setting(
-                "Azure OpenAI endpoints",
-                "\n                                  ".join(
-                    [f"{aoai_endpoint['name']} - {aoai_endpoint['url']}" for aoai_endpoint in self["aoai/endpoints"]]
-                ),
-            )
+            Configuration.print_setting_header("Azure OpenAI")
+            for aoai_endpoint in self["aoai/endpoints"]:
+                Configuration.print_line(f"{aoai_endpoint['name']} - {aoai_endpoint['url']}", level=1)
+                for item in aoai_endpoint.keys() - ["name", "url", "key", "virtual_deployments"]:
+                    Configuration.print_line(f"{item}: {aoai_endpoint[item]}", level=2)
+                if "virtual_deployments" in aoai_endpoint:
+                    for deployment in aoai_endpoint["virtual_deployments"]:
+                        Configuration.print_line(f"- {deployment['name']}", level=2)
+                        for standin in deployment["standins"]:
+                            standin_config_string = ", ".join(
+                                [f"{item}: {standin[item]}" for item in standin if item != "name"]
+                            )
+                            standin_config_string = f" ({standin_config_string})" if standin_config_string else ""
+                            Configuration.print_line(
+                                f"    └ {standin['name']}{standin_config_string}",
+                                level=2,
+                            )
+
+            Configuration.print_line("")
         if self["aoai/mock_response"]:
             Configuration.print_setting("Azure OpenAI mock response", self["aoai/mock_response"])
+
+    @staticmethod
+    def print_setting_header(name):
+        """Print the given setting header."""
+        print(name)
 
     @staticmethod
     def print_setting(name, value, level=0):
         """Print the given setting name and value."""
         print((f"{' ' * level * 3}{name.ljust(32) if level==0 else name}: {value}"))
+
+    @staticmethod
+    def print_line(line, level=0):
+        """Print the given setting name and value."""
+        print((f"{' ' * level * 3}{line}"))
 
     @staticmethod
     def from_file(file_path):

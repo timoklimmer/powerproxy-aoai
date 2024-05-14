@@ -37,7 +37,15 @@
                         "type": "string"
                     },
                     {
-                        "name": "AoaiEndpointName",
+                        "name": "AoaiEndpoint",
+                        "type": "string"
+                    },
+                    {
+                        "name": "AoaiVirtualDeployment",
+                        "type": "string"
+                    },
+                    {
+                        "name": "AoaiStandinDeployment",
                         "type": "string"
                     }
                 ]

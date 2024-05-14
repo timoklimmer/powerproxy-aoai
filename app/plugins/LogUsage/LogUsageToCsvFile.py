@@ -22,7 +22,9 @@ class LogUsageToCsvFile(LogUsageBase):
         "total_tokens",
         "aoai_roundtrip_time_ms",
         "aoai_region",
-        "aoai_endpoint_name",
+        "aoai_endpoint",
+        "aoai_virtual_deployment",
+        "aoai_standin_deployment",
     ]
 
     def on_plugin_instantiated(self):
@@ -52,7 +54,9 @@ class LogUsageToCsvFile(LogUsageBase):
         total_tokens,
         aoai_roundtrip_time_ms,
         aoai_region,
-        aoai_endpoint_name,
+        aoai_endpoint,
+        aoai_virtual_deployment,
+        aoai_standin_deployment,
     ):
         """Append a new line with the given infos."""
         with open(self.log_file_path, "a", encoding="utf-8") as log_file:
@@ -66,5 +70,7 @@ class LogUsageToCsvFile(LogUsageBase):
                 f"{total_tokens},"
                 f"{aoai_roundtrip_time_ms},"
                 f"{aoai_region},"
-                f"{aoai_endpoint_name}"
+                f"{aoai_endpoint},"
+                f"{aoai_virtual_deployment or ''},"
+                f"{aoai_standin_deployment or ''}"
             )

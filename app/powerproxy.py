@@ -10,6 +10,7 @@ import asyncio
 import io
 import json
 import random
+import re
 import time
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
@@ -61,8 +62,9 @@ async def lifespan(app: FastAPI):
     config.print()
     foreach_plugin(config.plugins, "on_print_configuration")
 
-    # collect AOAI endpoints and corresponding clients
-    app.state.aoai_endpoints = {}
+    # collect AOAI targets (endpoints or deployments) and corresponding clients
+    app.state.aoai_endpoint_clients = {}
+    app.state.aoai_targets = {}
     if config.get("aoai/mock_response"):
 
         async def get_mock_response(request):
@@ -72,38 +74,48 @@ async def lifespan(app: FastAPI):
                 await asyncio.sleep(ms_to_wait_before_return / 1_000)
             return httpx.Response(200, json=config.get("aoai/mock_response/json"))
 
-        app.state.aoai_endpoints["mock"] = {
+        app.state.aoai_endpoint_clients["mock"] = httpx.AsyncClient(
+            base_url="https://mock/",
+            transport=httpx.MockTransport(get_mock_response),
+        )
+        app.state.aoai_targets["mock"] = {
             "Mock client": {
                 "url": "",
                 "key": "",
-                "client": httpx.AsyncClient(
-                    base_url="https://mock/",
-                    transport=httpx.MockTransport(get_mock_response),
-                ),
+                "client": app.state.aoai_endpoint_clients["mock"],
                 "next_request_not_before_timestamp_ms": 0,
                 "non_streaming_fraction": 1,
             }
         }
     else:
-        app.state.aoai_endpoints = {
-            endpoint["name"]: {
-                "url": endpoint["url"],
-                "client": httpx.AsyncClient(base_url=endpoint["url"]),
-                "next_request_not_before_timestamp_ms": 0,
-                "non_streaming_fraction": float(
-                    endpoint["non_streaming_fraction"] if "non_streaming_fraction" in endpoint else 1
-                ),
-            }
-            | ({"key": endpoint["key"]} if "key" in endpoint else {})
-            for endpoint in config["aoai/endpoints"]
-        }
-    if len(app.state.aoai_endpoints) == 0:
-        raise ValueError(
-            (
-                "Missing endpoints for Azure OpenAI. Ensure that at least one endpoint for Azure "
-                "OpenAI or a mock response is configured in PowerProxy's configuration."
-            )
-        )
+        for endpoint in config["aoai/endpoints"]:
+            app.state.aoai_endpoint_clients[endpoint["name"]] = httpx.AsyncClient(base_url=endpoint["url"])
+            if "virtual_deployments" in endpoint:
+                for virtual_deployment in endpoint["virtual_deployments"]:
+                    for standin in virtual_deployment["standins"]:
+                        app.state.aoai_targets[f"{standin['name']}@{virtual_deployment['name']}@{endpoint['name']}"] = {
+                            "type": "virtual_deployment_standin",
+                            "endpoint": endpoint["name"],
+                            "virtual_deployment": virtual_deployment["name"],
+                            "standin": standin["name"],
+                            "url": endpoint["url"],
+                            "endpoint_client": app.state.aoai_endpoint_clients[endpoint["name"]],
+                            "next_request_not_before_timestamp_ms": 0,
+                            "non_streaming_fraction": float(
+                                standin["non_streaming_fraction"] if "non_streaming_fraction" in standin else 1
+                            ),
+                        } | ({"endpoint_key": endpoint["key"]} if "key" in endpoint else {})
+            else:
+                app.state.aoai_targets[endpoint["name"]] = {
+                    "type": "endpoint",
+                    "endpoint": endpoint["name"],
+                    "url": endpoint["url"],
+                    "endpoint_client": app.state.aoai_endpoint_clients[endpoint["name"]],
+                    "next_request_not_before_timestamp_ms": 0,
+                    "non_streaming_fraction": float(
+                        endpoint["non_streaming_fraction"] if "non_streaming_fraction" in endpoint else 1
+                    ),
+                } | ({"endpoint_key": endpoint["key"]} if "key" in endpoint else {})
 
     # print serve notification
     print()
@@ -115,8 +127,8 @@ async def lifespan(app: FastAPI):
 
     # shutdown
     # close AOAI endpoint connections
-    for aoai_endpoint_name in app.state.aoai_endpoints:
-        await app.state.aoai_endpoints[aoai_endpoint_name].aclose()
+    for aoai_endpoint_client_name in app.state.aoai_endpoint_clients:
+        await app.state.aoai_endpoint_clients[aoai_endpoint_client_name].aclose()
 
 
 ## define and run proxy app
@@ -155,6 +167,10 @@ async def handle_request(request: Request, path: str):
         "incoming_request_body": await request.body(),
         "path": path,
     }
+    routing_slip["virtual_deployment"] = None
+    deployment_match = re.search(r"(?<=deployments\/)[^\/]+", path)
+    if deployment_match:
+        routing_slip["virtual_deployment"] = deployment_match.group(0)
     routing_slip["incoming_request_body_dict"] = None
     try:
         routing_slip["incoming_request_body_dict"] = await request.json()
@@ -202,46 +218,59 @@ async def handle_request(request: Request, path: str):
     if client:
         foreach_plugin(config.plugins, "on_client_identified", routing_slip)
 
-    # get response from AOAI by iterating through the configured endpoints
+    # get response from AOAI by iterating through the configured targets (endpoints or deployments)
     aoai_response: httpx.Response = None
-    for aoai_endpoint_name in app.state.aoai_endpoints:
-        aoai_endpoint = app.state.aoai_endpoints[aoai_endpoint_name]
+    for aoai_target_name in app.state.aoai_targets:
+        aoai_target = app.state.aoai_targets[aoai_target_name]
 
-        # try next endpoint if this endpoint is blocked
-        if aoai_endpoint["next_request_not_before_timestamp_ms"] > get_current_timestamp_in_ms():
+        # try next target if this target is blocked
+        if aoai_target["next_request_not_before_timestamp_ms"] > get_current_timestamp_in_ms():
             continue
 
-        # try next endpoint if we have a non-streaming request and if we want to skip it to reserve
-        # resources for streaming requests
+        # try next target if target is virtual_deployment_standin and target's deployment does not match requested
+        # deployment
         if (
-            routing_slip["is_non_streaming_response_requested"]
-            and aoai_endpoint["non_streaming_fraction"] != 1
-            and (
-                aoai_endpoint["non_streaming_fraction"] == 0
-                or random.random() > aoai_endpoint["non_streaming_fraction"]
-            )
+            aoai_target["type"] == "virtual_deployment_standin"
+            and "virtual_deployment" in routing_slip
+            and routing_slip["virtual_deployment"] != aoai_target["virtual_deployment"]
+        ):
+            continue
+
+        # try next target if the non-streaming filter is not passed
+        if not passes_non_streaming_filter(
+            routing_slip["is_non_streaming_response_requested"], aoai_target["non_streaming_fraction"]
         ):
             continue
 
         # replace API key against real API key from AOAI, but only if the request has an API key and if we have an API
         # key for the real AOAI endpoint
-        # note: intentionally not raising an exception here to support requests using Azure AD/Entra ID authentication.
-        #       Entra ID requests miss an api-key header but have an Authorization header, and we pass that as is, so
-        #       AOAI will do the authentication then.
+        # note: intentionally not raising an exception here if an API key is missing to support requests using
+        #       Azure AD/Entra ID authentication. Entra ID requests miss an api-key header but have an Authorization
+        #       header, and we pass that as is, so AOAI will do the authentication then for us.
         if "api-key" in headers:
-            if "key" in aoai_endpoint:
-                headers["api-key"] = aoai_endpoint["key"] or ""
+            if "endpoint_key" in aoai_target:
+                headers["api-key"] = aoai_target["endpoint_key"] or ""
             else:
                 del headers["api-key"]
 
-        # remember endpoint and request start time
-        routing_slip["aoai_endpoint_name"] = aoai_endpoint_name
+        # replace deployment against standin in path if target is deployment standin
+        if aoai_target["type"] == "virtual_deployment_standin":
+            routing_slip["path"] = re.sub(
+                r"/deployments/[^/]+", f"/deployments/{aoai_target['standin']}", routing_slip["path"]
+            )
+
+        # remember target and request start time
+        routing_slip["aoai_endpoint"] = aoai_target["endpoint"]
+        routing_slip["aoai_virtual_deployment"] = (
+            aoai_target["virtual_deployment"] if "virtual_deployment" in aoai_target else None
+        )
+        routing_slip["aoai_standin_deployment"] = aoai_target["standin"] if "standin" in aoai_target else None
         routing_slip["aoai_request_start_time"] = get_current_timestamp_in_ms()
 
         # send request
         new_timeout = httpx.Timeout(timeout=5.0)
         new_timeout.read = 120.0
-        aoai_request = aoai_endpoint["client"].build_request(
+        aoai_request = aoai_target["endpoint_client"].build_request(
             request.method,
             routing_slip["path"],
             timeout=new_timeout,
@@ -249,7 +278,7 @@ async def handle_request(request: Request, path: str):
             headers=headers,
             content=routing_slip["incoming_request_body"],
         )
-        aoai_response = await aoai_endpoint["client"].send(
+        aoai_response = await aoai_target["endpoint_client"].send(
             aoai_request,
             stream=(not routing_slip["is_non_streaming_response_requested"]),
         )
@@ -260,7 +289,7 @@ async def handle_request(request: Request, path: str):
             waiting_time_ms_until_next_request = (
                 int(aoai_response.headers["retry-after-ms"]) if "retry-after-ms" in aoai_response.headers else 10_000
             )
-            aoai_endpoint["next_request_not_before_timestamp_ms"] = (
+            aoai_target["next_request_not_before_timestamp_ms"] = (
                 get_current_timestamp_in_ms() + waiting_time_ms_until_next_request
             )
             # try next endpoint
@@ -275,7 +304,7 @@ async def handle_request(request: Request, path: str):
         raise ImmediateResponseException(
             Response(
                 content=json.dumps(
-                    {"message": "Could not find any endpoint with remaining capacity. Try again later."}
+                    {"message": "Could not find any endpoint or deployment with remaining capacity. Try again later."}
                 ),
                 media_type="application/json",
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -359,10 +388,20 @@ def measure_aoai_roundtrip_time_ms(routing_slip):
     )
 
 
+def passes_non_streaming_filter(is_non_streaming_response_requested, non_streaming_fraction):
+    """Determines by chance if a request should be processed or not."""
+    return (
+        True
+        if not is_non_streaming_response_requested
+        else not (
+            non_streaming_fraction != 1 and (non_streaming_fraction == 0 or random.random() > non_streaming_fraction)
+        )
+    )
+
+
 if __name__ == "__main__":
-    # note: this applies only when the powerproxy.py script is executed directly. In the Dockerfile
-    #       provided, we use a uvicorn command to run the app, so parameters might need to be
-    #       modified there AS WELL.
+    # note: this applies only when the powerproxy.py script is executed directly. In the Dockerfile provided, we use a
+    #       uvicorn command to run the app, so parameters might need to be modified there AS WELL.
     uvicorn.run(
         app,
         host="0.0.0.0",

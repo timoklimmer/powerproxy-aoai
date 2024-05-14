@@ -69,6 +69,22 @@ aoai:
       # 1   = endpoint will handle all non-streaming request it gets
       non_streaming_fraction: 1
 
+      # endpoints can also have "virtual deployments" (optional). when a virtual deployment is defined, requests
+      # requesting specific deployments are rewritten such that a smart load balancing across the listed "stand-ins"
+      # = real deployments at the endpoint happens. similar to the non_streaming_fraction at the endpoint level, we
+      # can also set non_streaming_fractions for stand-ins.
+      virtual_deployments:
+        - name: gpt-35-turbo
+          standins:
+            - name: gpt-35-turbo-ptu
+              non_streaming_fraction: 0.2
+            - name: gpt-35-turbo-paygo
+        - name: gpt-4-turbo
+          standins:
+            - name: gpt-4-turbo-ptu
+              non_streaming_fraction: 0.2
+            - name: gpt-4-turbo-paygo
+
   # # alternatively, specify a mock response to be used instead of the real response from
   # # Azure OpenAI
   # # note: use this for testing PowerProxy's scalability
