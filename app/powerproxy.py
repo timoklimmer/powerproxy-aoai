@@ -93,7 +93,9 @@ async def lifespan(app: FastAPI):
             if "virtual_deployments" in endpoint:
                 for virtual_deployment in endpoint["virtual_deployments"]:
                     for standin in virtual_deployment["standins"]:
-                        app.state.aoai_targets[f"{standin['name']}@{virtual_deployment['name']}@{endpoint['name']}"] = {
+                        target_name = f"{standin['name']}@{virtual_deployment['name']}@{endpoint['name']}"
+                        app.state.aoai_targets[target_name] = {
+                            "name": target_name,
                             "type": "virtual_deployment_standin",
                             "endpoint": endpoint["name"],
                             "virtual_deployment": virtual_deployment["name"],
@@ -107,6 +109,7 @@ async def lifespan(app: FastAPI):
                         } | ({"endpoint_key": endpoint["key"]} if "key" in endpoint else {})
             else:
                 app.state.aoai_targets[endpoint["name"]] = {
+                    "name": endpoint["name"],
                     "type": "endpoint",
                     "endpoint": endpoint["name"],
                     "url": endpoint["url"],
@@ -282,8 +285,19 @@ async def handle_request(request: Request, path: str):
             aoai_request,
             stream=(not routing_slip["is_non_streaming_response_requested"]),
         )
+        # got http code other than 200
+        if aoai_response.status_code != 200:
+            # print infos to console
+            print(
+                (
+                    f"Unexpected HTTP Code {aoai_response.status_code} while using target '{aoai_target['name']}'. "
+                    f"Text: {aoai_response.text} "
+                    f"Path: {routing_slip['path']} "
+                    f"Url: {aoai_target['url']}"
+                )
+            )
+        # got 429 or 500
         if aoai_response.status_code in [429, 500]:
-            # got 429 or 500
             # block endpoint for some time, either according to the time given by AOAI or, if not
             # available, for 10 seconds
             waiting_time_ms_until_next_request = (
@@ -292,17 +306,6 @@ async def handle_request(request: Request, path: str):
             aoai_target["next_request_not_before_timestamp_ms"] = (
                 get_current_timestamp_in_ms() + waiting_time_ms_until_next_request
             )
-
-            # if status code is 500, print error to console to facilitate troubleshooting
-            if aoai_response.status_code == 500:
-                print(
-                    (
-                        f"HTTP Code 500 - Internal Server Error while using target '{aoai_target['name']}'. "
-                        f"Text: {aoai_response.text} "
-                        f"Path: {routing_slip['path']} "
-                        f"Url: {aoai_target['url']}"
-                    )
-                )
 
             # try next target
             continue
@@ -318,6 +321,7 @@ async def handle_request(request: Request, path: str):
                 content=json.dumps(
                     {"message": "Could not find any endpoint or deployment with remaining capacity. Try again later."}
                 ),
+                headers={"retry-after-ms", 10_000},
                 media_type="application/json",
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             )
