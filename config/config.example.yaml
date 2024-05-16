@@ -7,8 +7,8 @@ clients:
     description: An example team named 'Team 1'.
     key: 28ef59ae30342978f81c4ad96ce47ab
     max_tokens_per_minute_in_k:
-     - gpt-35-turbo: 0.01
-     - gpt-4-turbo: 20
+      gpt-35-turbo: 20
+      gpt-4-turbo: 5
     deployments_allowed: gpt-35-turbo, gpt-4-turbo
   - name: Team 2
     description: An example team named 'Team 2'.
@@ -92,7 +92,6 @@ aoai:
             - name: gpt-4-turbo-ptu
               non_streaming_fraction: 0.2
             - name: gpt-4-turbo-paygo
-
   # # alternatively, specify a mock response to be used instead of the real response from
   # # Azure OpenAI
   # # note: use this for testing PowerProxy's scalability
