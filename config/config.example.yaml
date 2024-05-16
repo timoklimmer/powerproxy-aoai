@@ -13,12 +13,14 @@ clients:
   - name: Team 2
     description: An example team named 'Team 2'.
     key: 1113456789abcdef0123456789abcde
-    deployments_allowed: gpt-35-turbo, gpt-4-turbo
+    deployments_allowed:
+      - gpt-35-turbo
+      - gpt-4-turbo
     max_tokens_per_minute_in_k: 30
   - name: Test Script Client 1
     description: Used by the included test scripts.
     key: 04ae14bc78184621d37f1ce57a52eb7
-    deployments_allowed: gpt-35-turbo, gpt-4-turbo
+    deployments_allowed: [gpt-35-turbo, gpt-4-turbo]
     max_tokens_per_minute_in_k: 5
   - name: Test Script Client 2
     description: Used by the included test scripts.

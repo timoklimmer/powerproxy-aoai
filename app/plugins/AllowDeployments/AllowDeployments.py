@@ -32,8 +32,12 @@ class AllowDeployments(PowerProxyPlugin):
 
         # get the deployments allowed for the client
         client_settings = self.app_configuration.get_client_settings(client)
-        if "deployments_allowed" in client_settings and isinstance(client_settings["deployments_allowed"], str):
-            deployments_allowed_list = [item.strip() for item in client_settings["deployments_allowed"].split(",")]
+        if "deployments_allowed" in client_settings:
+            deployments_allowed_list = None
+            if isinstance(client_settings["deployments_allowed"], str):
+                deployments_allowed_list = [item.strip() for item in client_settings["deployments_allowed"].split(",")]
+            if isinstance(client_settings["deployments_allowed"], list):
+                deployments_allowed_list = client_settings["deployments_allowed"]
         else:
             raise ImmediateResponseException(
                 Response(
