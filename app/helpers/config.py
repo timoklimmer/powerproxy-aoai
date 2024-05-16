@@ -34,6 +34,7 @@ class Configuration:
 
     def _validate_values_dict(self, values_dict):
         """Validate the given configuration and see if it corresponds to the expected schema."""
+        # validate against schema
         with open("config.schema.json", "r", encoding="utf-8") as config_schema_file:
             schema = yaml.safe_load(config_schema_file)
         try:
@@ -44,6 +45,36 @@ class Configuration:
             ) from exception
         except SchemaError as exception:
             raise ValueError("❌ The given schema for the config file is invalid.") from exception
+        # validate non_streaming_fraction (jsonschema cannot validate that, so we need to validate on our own here)
+        if "endpoints" in values_dict["aoai"]:
+            endpoints = values_dict["aoai"]["endpoints"]
+            last_endpoint = endpoints[-1]
+            if "non_streaming_fraction" in last_endpoint and float(last_endpoint["non_streaming_fraction"]) != 1:
+                raise ValueError(
+                    (
+                        "❌ If a non_streaming_fraction is specified for the last endpoint in the configuration, its "
+                        "non_streaming_fraction value needs to be set to 1 so there is at least one endpoint to serve "
+                        f"non-streaming requests. Ensure that endpoint '{last_endpoint['name']}' has either a "
+                        "non_streaming_fraction value of 1 or no non_streaming_fraction value at all."
+                    )
+                )
+            for endpoint in endpoints:
+                if "virtual_deployments" in endpoint:
+                    virtual_deployments = endpoint["virtual_deployments"]
+                    for virtual_deployment in virtual_deployments:
+                        standins = virtual_deployment["standins"]
+                        last_standin = standins[-1]
+                        if "non_streaming_fraction" in last_standin and last_standin["non_streaming_fraction"] != 1:
+                            raise ValueError(
+                                (
+                                    "❌ If a non_streaming_fraction is specified for the last standin in the "
+                                    "configuration of a virtual deployment, its non_streaming_fraction value needs to "
+                                    "be set to 1 so there is at least one standin to serve non-streaming requests. "
+                                    f"Ensure that standin '{last_standin['name']}' at endpoint '{endpoint['name']}', "
+                                    f"virtual deployment '{virtual_deployment['name']}' has either a "
+                                    f"non_streaming_fraction value of 1 or no non_streaming_fraction value at all."
+                                )
+                            )
 
     def __getitem__(self, key):
         """Dunder method to get config value via ["..."] syntax."""
