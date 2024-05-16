@@ -6,7 +6,9 @@ clients:
   - name: Team 1
     description: An example team named 'Team 1'.
     key: 28ef59ae30342978f81c4ad96ce47ab
-    max_tokens_per_minute_in_k: 20
+    max_tokens_per_minute_in_k:
+     - gpt-35-turbo: 0.01
+     - gpt-4-turbo: 20
     deployments_allowed: gpt-35-turbo, gpt-4-turbo
   - name: Team 2
     description: An example team named 'Team 2'.

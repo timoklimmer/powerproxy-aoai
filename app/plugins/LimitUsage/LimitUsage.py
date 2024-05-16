@@ -41,26 +41,36 @@ class LimitUsage(TokenCountingPlugin):
         """Run when the client has been identified."""
         super().on_client_identified(routing_slip)
         client = routing_slip["client"]
+        virtual_deployment = routing_slip["virtual_deployment"]
 
         # ensure there is a budget for the current client and minute, leaving budget as is if it
         # pre-exists for the current minute
         current_minute = int(time.time() / 60)
-        current_minute_from_cache = int(self._get_cache_setting(f"LimitUsage-{client}-minute") or 0)
+        current_minute_from_cache = int(
+            self._get_cache_setting(f"LimitUsage-{client}-{virtual_deployment}-minute") or 0
+        )
         if not current_minute_from_cache or current_minute_from_cache != current_minute:
-            self._set_cache_setting(f"LimitUsage-{client}-minute", current_minute)
+            self._set_cache_setting(f"LimitUsage-{client}-{virtual_deployment}-minute", current_minute)
             self._set_cache_setting(
-                f"LimitUsage-{client}-budget",
-                self._get_max_tokens_per_minute_in_k_for_client(client),
+                f"LimitUsage-{client}-{virtual_deployment}-budget",
+                self._get_max_tokens_per_minute_in_k_for_client(client, virtual_deployment),
             )
 
         # ensure that the client has enough budget left for the current minute and return a 429
         # response if not
-        current_minute_from_cache = int(self._get_cache_setting(f"LimitUsage-{client}-minute"))
-        current_budget_from_cache = int(self._get_cache_setting(f"LimitUsage-{client}-budget"))
+        current_minute_from_cache = int(self._get_cache_setting(f"LimitUsage-{client}-{virtual_deployment}-minute"))
+        current_budget_from_cache = int(self._get_cache_setting(f"LimitUsage-{client}-{virtual_deployment}-budget"))
         if current_minute_from_cache == current_minute and current_budget_from_cache <= 0:
             raise ImmediateResponseException(
                 Response(
-                    content=json.dumps({"message": f"Too many requests for client '{client}'. Try again later."}),
+                    content=json.dumps(
+                        {
+                            "message": (
+                                f"Too many requests for client '{client}' / virtual deployment '{virtual_deployment}'. "
+                                "Try again later."
+                            )
+                        }
+                    ),
                     media_type="application/json",
                     status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 )
@@ -72,9 +82,10 @@ class LimitUsage(TokenCountingPlugin):
 
         # decrement the client's budget by the total tokens
         client = routing_slip["client"]
-        old_budget = int(self._get_cache_setting(f"LimitUsage-{client}-budget"))
+        virtual_deployment = routing_slip["virtual_deployment"]
+        old_budget = int(self._get_cache_setting(f"LimitUsage-{client}-{virtual_deployment}-budget"))
         new_budget = old_budget - self.total_tokens
-        self._set_cache_setting(f"LimitUsage-{client}-budget", new_budget)
+        self._set_cache_setting(f"LimitUsage-{client}-{virtual_deployment}-budget", new_budget)
 
     def _get_cache_setting(self, key, default=None):
         """Return the setting with the given key from the cache."""
@@ -89,9 +100,9 @@ class LimitUsage(TokenCountingPlugin):
         else:
             self.local_cache[key] = value
 
-    def _get_max_tokens_per_minute_in_k_for_client(self, client):
+    def _get_max_tokens_per_minute_in_k_for_client(self, client, virtual_deployment):
         """Return the number of maximum tokens per minute in thousands for the given client."""
-        if client not in self.configured_max_tpms:
+        if client not in self.configured_max_tpms or virtual_deployment not in self.configured_max_tpms[client]:
             client_settings = self.app_configuration.get_client_settings(client)
             if "max_tokens_per_minute_in_k" not in client_settings:
                 raise ImmediateResponseException(
@@ -108,5 +119,33 @@ class LimitUsage(TokenCountingPlugin):
                         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     )
                 )
-            self.configured_max_tpms[client] = int(float(client_settings["max_tokens_per_minute_in_k"]) * 1000)
-        return self.configured_max_tpms[client]
+            max_tokens_per_minute_in_k = client_settings["max_tokens_per_minute_in_k"]
+            if isinstance(max_tokens_per_minute_in_k, (float, int)):
+                max_tpm_per_client_and_deployment = int(float(max_tokens_per_minute_in_k) * 1000)
+            elif isinstance(max_tokens_per_minute_in_k, dict):
+                if virtual_deployment in max_tokens_per_minute_in_k:
+                    max_tpm_per_client_and_deployment = int(
+                        float(max_tokens_per_minute_in_k[virtual_deployment]) * 1000
+                    )
+                else:
+                    raise ImmediateResponseException(
+                        Response(
+                            content=json.dumps(
+                                {
+                                    "error": (
+                                        f"Configuration for client '{client}' has a 'max_tokens_per_minute_in_k' "
+                                        f"setting but misses a configuration for virtual deployment "
+                                        "'{virtual_deployment}'. This needs to be set when the LimitUsage plugin is "
+                                        "enabled and virtual deployment-specific limits are configured."
+                                    )
+                                }
+                            ),
+                            media_type="application/json",
+                            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        )
+                    )
+            if client not in self.configured_max_tpms:
+                self.configured_max_tpms[client] = {}
+            self.configured_max_tpms[client][virtual_deployment] = max_tpm_per_client_and_deployment
+
+        return self.configured_max_tpms[client][virtual_deployment]
