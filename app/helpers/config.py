@@ -40,11 +40,9 @@ class Configuration:
         try:
             jsonschema.validate(instance=values_dict, schema=schema)
         except ValidationError as exception:
-            raise ValueError(
-                f"❌ The given configuration is invalid. Validation message: {exception.message}"
-            ) from exception
+            raise ValueError(f"❌ The given configuration is invalid.\n{exception}") from exception
         except SchemaError as exception:
-            raise ValueError("❌ The given schema for the config file is invalid.") from exception
+            raise ValueError(f"❌ The given schema for the config file is invalid.\n{exception}") from exception
         # validate non_streaming_fraction (jsonschema cannot validate that, so we need to validate on our own here)
         if "endpoints" in values_dict["aoai"]:
             endpoints = values_dict["aoai"]["endpoints"]

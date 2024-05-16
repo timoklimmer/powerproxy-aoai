@@ -3,7 +3,9 @@
 import importlib
 import re
 
+import jsonschema
 from helpers.tokens import estimate_prompt_tokens_from_request_body_dict
+from jsonschema.exceptions import SchemaError, ValidationError
 
 
 def foreach_plugin(plugins, method_name, *args):
@@ -13,20 +15,34 @@ def foreach_plugin(plugins, method_name, *args):
             getattr(plugin, method_name)(*args)
         else:
             raise ValueError(
-                (
-                    f"Plugin class '{plugin.__class__()}' does not have a method named "
-                    f"'{method_name}'."
-                )
+                (f"Plugin class '{plugin.__class__.__name__}' does not have a method named " f"'{method_name}'.")
             )
 
 
 class PowerProxyPlugin:
     """A plugin for PowerProxy, doing different things at different events."""
 
+    plugin_config_jsonschema = """"""
+
     def __init__(self, app_configuration, plugin_configuration):
         """Constructor."""
         self.app_configuration = app_configuration
         self.plugin_configuration = plugin_configuration
+        self.validate_plugin_configuration()
+
+    def validate_plugin_configuration(self):
+        """Validate if the configuration given to the plugin is valid."""
+        if self.plugin_configuration and self.plugin_config_jsonschema:
+            try:
+                jsonschema.validate(instance=self.plugin_configuration, schema=self.plugin_config_jsonschema)
+            except ValidationError as exception:
+                raise ValueError(
+                    f"❌ The configuration for plugin '{self.__class__.__name__}' is invalid.\n{exception}"
+                ) from exception
+            except SchemaError as exception:
+                raise ValueError(
+                    f"❌ The schema for plugin '{self.__class__.__name__}' is invalid.\n{exception}"
+                ) from exception
 
     def on_plugin_instantiated(self):
         """Run directly after the new plugin instance has been instantiated."""
@@ -57,9 +73,7 @@ class PowerProxyPlugin:
     def get_plugin_class(plugin_name):
         """Return the class for the given plugin name."""
         plugin_group = re.sub("To.+$", "", plugin_name)
-        return getattr(
-            importlib.import_module(f"plugins.{plugin_group}.{plugin_name}"), plugin_name
-        )
+        return getattr(importlib.import_module(f"plugins.{plugin_group}.{plugin_name}"), plugin_name)
 
     @staticmethod
     def get_plugin_instance(plugin_name, app_configuration, plugin_configuration):
@@ -110,9 +124,7 @@ class TokenCountingPlugin(PowerProxyPlugin):
         """Process the end of a stream (needs streaming requested)."""
         super().on_end_of_target_response_stream_reached(routing_slip)
 
-        self.prompt_tokens = estimate_prompt_tokens_from_request_body_dict(
-            routing_slip["incoming_request_body_dict"]
-        )
+        self.prompt_tokens = estimate_prompt_tokens_from_request_body_dict(routing_slip["incoming_request_body_dict"])
         self.completion_tokens = self.streaming_completion_tokens
         self.total_tokens = (
             self.prompt_tokens + self.completion_tokens

@@ -19,6 +19,22 @@ class LimitUsage(TokenCountingPlugin):
     redis_host = None
     redis_password = None
 
+    plugin_config_jsonschema = {
+        "$schema": "http://json-schema.org/draft/2019-09/schema#",
+        "$ref": "#/definitions/PluginConfiguration",
+        "definitions": {
+            "PluginConfiguration": {
+                "type": "object",
+                "properties": {"redis": {"$ref": "#/definitions/Redis"}},
+            },
+            "Redis": {
+                "type": "object",
+                "properties": {"redis_host": {"type": "string"}, "redis_password": {"type": "string"}},
+                "required": ["redis_host", "redis_password"],
+            },
+        },
+    }
+
     def on_plugin_instantiated(self):
         """Run directly after the new plugin instance has been instantiated."""
         if "redis" in self.plugin_configuration:
