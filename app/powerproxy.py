@@ -292,14 +292,26 @@ async def handle_request(request: Request, path: str):
             aoai_target["next_request_not_before_timestamp_ms"] = (
                 get_current_timestamp_in_ms() + waiting_time_ms_until_next_request
             )
-            # try next endpoint
+
+            # if status code is 500, print error to console to facilitate troubleshooting
+            if aoai_response.status_code == 500:
+                print(
+                    (
+                        f"HTTP Code 500 - Internal Server Error while using target '{aoai_target['name']}'. "
+                        f"Text: {aoai_response.text} "
+                        f"Path: {routing_slip['path']} "
+                        f"Url: {aoai_target['url']}"
+                    )
+                )
+
+            # try next target
             continue
 
-        # if we reached here, we found an endpoint which is able to serve our request
+        # if we reached here, we found a target which is able to serve our request
         # -> go ahead
         break
 
-    # raise 429 if we could not find any suitable endpoint
+    # raise 429 if we could not find any suitable target
     if aoai_response is None:
         raise ImmediateResponseException(
             Response(
