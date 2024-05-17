@@ -9,15 +9,17 @@
 ## Overview
 
 PowerProxy for Azure OpenAI monitors and processes traffic to and from Azure OpenAI Service
-endpoints.
+endpoints and deployments.
 
 As service "in the middle", it enables
 
-- a smart load balancing, usually better suited for LLM scenarios than traditional round-robin
+- a smart load balancing, usually better suited for LLM scenarios than traditional round-robin, even across deployments
 
-- to bill teams or use cases according to their consumption, esp. when shared deployments are used
+- to bill teams or projects according to their consumption, esp. when shared deployments are used
 
-- custom rate limiting, monitoring and content filtering
+- custom rate limiting, monitoring and custom content filtering
+
+- restricting access to deployments/models per team/project (or "clients" in general)
 
 - validating and optimizing settings, eg. max_tokens
 
@@ -42,10 +44,16 @@ introducing PowerProxy as well as a [PowerPoint deck](docs/PowerProxy%20for%20Az
 
 ## Worth to Note
 
+- Smartly load balances **across endpoints and deployments**.
+
+- Not only supports **load balancing across endpoints, but also deployments**. Due to the load balancing across
+deployments it can also be used in conjunction with the Assistants API, for example.
+
 - Works on **any hosting service that runs Python and/or Docker**, for example Azure Container Apps
 or Kubernetes.
 
-- GitHub repo has **example deployment script for Azure Container Apps**.
+- GitHub repo has **example deployment script for Azure Container Apps**. However, can equally be used in an
+**existing Kubernetes cluster**.
 
 - **Extremely fast** due to asynchronous processing and minimal set of Azure services being involved.
 Low extra cost and latency. **Example: 6.300+ Requests per Second @ < 11ms in P90.**
@@ -126,12 +134,16 @@ the file, and afterwards import it into Azure again.
 ## Known Issues
 - Due to limitations by OpenAI, the exact number of consumed tokens is not available when requests
 ask for a streaming response. In that case, an approximation based on code provided by OpenAI is
-used. Once exact numbers are available for streaming responses, this repo will be updated. For
-non-streaming responses, token numbers are exact.
+used. Once exact numbers are available for streaming responses, this repo will be updated (will be
+available in Azure soon). For non-streaming responses, token numbers are exact.
+- Does not integrate with the Chat Playground in Azure OpenAI because there is no way to inject
+PowerProxy in between.
 
 ## Authors
 - Timo Klimmer, Microsoft (lead)
 - Clémense Lesné, Microsoft
+- Masha Stroganova, Microsoft
+- ...and further friends (see [here](https://github.com/timoklimmer/powerproxy-aoai/graphs/contributors) for more)
 
 ## Contributing
 If you want to contribute, feel free to send pull requests. After successful review, we will merge
