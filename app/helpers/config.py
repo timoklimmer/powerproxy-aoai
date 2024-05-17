@@ -15,7 +15,7 @@ class Configuration:
 
     def __init__(self, values_dict):
         """Constructor."""
-        self._validate_values_dict(values_dict)
+        Configuration.validate_from_dict(values_dict)
         self.values_dict = QueryDict(values_dict)
         self.clients = [client["name"] for client in self.get("clients")]
         self.entra_id_client = None
@@ -24,31 +24,37 @@ class Configuration:
                 self.entra_id_client = client
         self.key_client_map = {client["key"]: client["name"] for client in self.get("clients") if "key" in client}
         self.plugin_names = [plugin["name"] for plugin in self.get("plugins") or []]
-
-        # instantiate plugins
         self.plugins = [
             PowerProxyPlugin.get_plugin_instance(plugin_config["name"], self, QueryDict(plugin_config))
-            for plugin_config in self.get("plugins") or []
+            for plugin_config in self.get("plugins", [])
         ]
         foreach_plugin(self.plugins, "on_plugin_instantiated")
 
-    def _validate_values_dict(self, values_dict):
-        """Validate the given configuration and see if it corresponds to the expected schema."""
-        # validate against schema
-        with open("config.schema.json", "r", encoding="utf-8") as config_schema_file:
+    @staticmethod
+    def validate_from_file(config_file, config_schema_file="config.schema.json"):
+        """Validates the config in a configuration file."""
+        with open(config_file, "r", encoding="utf-8") as file:
+            config_values_dict = yaml.safe_load(file)
+        Configuration.validate_from_dict(config_values_dict, config_schema_file)
+
+    @staticmethod
+    def validate_from_dict(values_dict, config_schema_file="config.schema.json"):
+        """Validate the given configuration."""
+        # validate against config schema file
+        with open(config_schema_file, "r", encoding="utf-8") as config_schema_file:
             schema = yaml.safe_load(config_schema_file)
         try:
             jsonschema.validate(instance=values_dict, schema=schema)
         except ValidationError as exception:
-            raise ValueError(f"❌ The given configuration is invalid.\n{exception}") from exception
+            raise ValidationError(f"❌ The given configuration is invalid.\n{exception}") from exception
         except SchemaError as exception:
-            raise ValueError(f"❌ The given schema for the config file is invalid.\n{exception}") from exception
+            raise SchemaError(f"❌ The given schema for the config file is invalid.\n{exception}") from exception
         # validate non_streaming_fraction (jsonschema cannot validate that, so we need to validate on our own here)
         if "endpoints" in values_dict["aoai"]:
             endpoints = values_dict["aoai"]["endpoints"]
             last_endpoint = endpoints[-1]
             if "non_streaming_fraction" in last_endpoint and float(last_endpoint["non_streaming_fraction"]) != 1:
-                raise ValueError(
+                raise ValidationError(
                     (
                         "❌ If a non_streaming_fraction is specified for the last endpoint in the configuration, its "
                         "non_streaming_fraction value needs to be set to 1 so there is at least one endpoint to serve "
@@ -63,7 +69,7 @@ class Configuration:
                         standins = virtual_deployment["standins"]
                         last_standin = standins[-1]
                         if "non_streaming_fraction" in last_standin and last_standin["non_streaming_fraction"] != 1:
-                            raise ValueError(
+                            raise ValidationError(
                                 (
                                     "❌ If a non_streaming_fraction is specified for the last standin in the "
                                     "configuration of a virtual deployment, its non_streaming_fraction value needs to "
@@ -73,6 +79,36 @@ class Configuration:
                                     f"non_streaming_fraction value of 1 or no non_streaming_fraction value at all."
                                 )
                             )
+        # validate plugin and client configurations
+        for plugin_config in values_dict.get("plugins", []):
+            plugin_class = PowerProxyPlugin.get_plugin_class(plugin_config["name"])
+            plugin_config_jsonschema = getattr(plugin_class, "plugin_config_jsonschema")
+            client_config_jsonschema = getattr(plugin_class, "client_config_jsonschema")
+            # plugins
+            if plugin_config_jsonschema:
+                try:
+                    jsonschema.validate(instance=plugin_config, schema=plugin_config_jsonschema)
+                except ValidationError as exception:
+                    raise ValidationError(
+                        f"❌ The configuration for plugin '{plugin_class.__name__}' is invalid.\n{exception}"
+                    ) from exception
+                except SchemaError as exception:
+                    raise SchemaError(
+                        f"❌ The schema for plugin '{plugin_class.__name__}' is invalid.\n{exception}"
+                    ) from exception
+            # clients
+            if client_config_jsonschema:
+                for client in values_dict.get("clients"):
+                    try:
+                        jsonschema.validate(instance=client, schema=client_config_jsonschema)
+                    except ValidationError as exception:
+                        raise ValidationError(
+                            f"❌ The configuration for client '{client['name']}' is invalid.\n{exception}"
+                        ) from exception
+                    except SchemaError as exception:
+                        raise SchemaError(
+                            f"❌ The client config schema in plugin '{plugin_class.__name__}' is invalid.\n{exception}"
+                        ) from exception
 
     def __getitem__(self, key):
         """Dunder method to get config value via ["..."] syntax."""

@@ -3,9 +3,7 @@
 import importlib
 import re
 
-import jsonschema
 from helpers.tokens import estimate_prompt_tokens_from_request_body_dict
-from jsonschema.exceptions import SchemaError, ValidationError
 
 
 def foreach_plugin(plugins, method_name, *args):
@@ -29,37 +27,6 @@ class PowerProxyPlugin:
         """Constructor."""
         self.app_configuration = app_configuration
         self.plugin_configuration = plugin_configuration
-        self.validate_plugin_configuration()
-        self.validate_client_configurations()
-
-    def validate_plugin_configuration(self):
-        """Validate if the configuration given to the plugin is valid."""
-        if self.plugin_configuration and self.plugin_config_jsonschema:
-            try:
-                jsonschema.validate(instance=self.plugin_configuration, schema=self.plugin_config_jsonschema)
-            except ValidationError as exception:
-                raise ValueError(
-                    f"❌ The configuration for plugin '{self.__class__.__name__}' is invalid.\n{exception}"
-                ) from exception
-            except SchemaError as exception:
-                raise ValueError(
-                    f"❌ The schema for plugin '{self.__class__.__name__}' is invalid.\n{exception}"
-                ) from exception
-
-    def validate_client_configurations(self):
-        """Validate each configured client and check if it has all info required by the plugin."""
-        if self.client_config_jsonschema:
-            for client in self.app_configuration["clients"]:
-                try:
-                    jsonschema.validate(instance=client, schema=self.client_config_jsonschema)
-                except ValidationError as exception:
-                    raise ValueError(
-                        f"❌ The configuration for client '{client['name']}' is invalid.\n{exception}"
-                    ) from exception
-                except SchemaError as exception:
-                    raise ValueError(
-                        f"❌ The client config schema in plugin '{self.__class__.__name__}' is invalid.\n{exception}"
-                    ) from exception
 
     def on_plugin_instantiated(self):
         """Run directly after the new plugin instance has been instantiated."""
