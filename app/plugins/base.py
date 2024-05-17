@@ -22,13 +22,15 @@ def foreach_plugin(plugins, method_name, *args):
 class PowerProxyPlugin:
     """A plugin for PowerProxy, doing different things at different events."""
 
-    plugin_config_jsonschema = """"""
+    plugin_config_jsonschema = None
+    client_config_jsonschema = None
 
     def __init__(self, app_configuration, plugin_configuration):
         """Constructor."""
         self.app_configuration = app_configuration
         self.plugin_configuration = plugin_configuration
         self.validate_plugin_configuration()
+        self.validate_client_configurations()
 
     def validate_plugin_configuration(self):
         """Validate if the configuration given to the plugin is valid."""
@@ -43,6 +45,21 @@ class PowerProxyPlugin:
                 raise ValueError(
                     f"❌ The schema for plugin '{self.__class__.__name__}' is invalid.\n{exception}"
                 ) from exception
+
+    def validate_client_configurations(self):
+        """Validate each configured client and check if it has all info required by the plugin."""
+        if self.client_config_jsonschema:
+            for client in self.app_configuration["clients"]:
+                try:
+                    jsonschema.validate(instance=client, schema=self.client_config_jsonschema)
+                except ValidationError as exception:
+                    raise ValueError(
+                        f"❌ The configuration for client '{client['name']}' is invalid.\n{exception}"
+                    ) from exception
+                except SchemaError as exception:
+                    raise ValueError(
+                        f"❌ The client config schema in plugin '{self.__class__.__name__}' is invalid.\n{exception}"
+                    ) from exception
 
     def on_plugin_instantiated(self):
         """Run directly after the new plugin instance has been instantiated."""

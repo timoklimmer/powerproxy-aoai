@@ -19,6 +19,22 @@ class LimitUsage(TokenCountingPlugin):
     redis_host = None
     redis_password = None
 
+    client_config_jsonschema = {
+        "$schema": "http://json-schema.org/draft/2019-09/schema#",
+        "$ref": "#/definitions/ClientConfiguration",
+        "definitions": {
+            "ClientConfiguration": {
+                "type": "object",
+                "properties": {"max_tokens_per_minute_in_k": {"$ref": "#/definitions/MaxTokensPerMinute"}},
+                "required": ["max_tokens_per_minute_in_k"],
+            },
+            "MaxTokensPerMinute": {
+                "anyOf": [{"$ref": "#/definitions/MaxTokensPerMinuteByClient"}, {"type": "number"}],
+            },
+            "MaxTokensPerMinuteByClient": {"type": "object", "additionalProperties": {"type": "number"}},
+        },
+    }
+
     plugin_config_jsonschema = {
         "$schema": "http://json-schema.org/draft/2019-09/schema#",
         "$ref": "#/definitions/PluginConfiguration",
