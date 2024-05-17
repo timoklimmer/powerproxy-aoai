@@ -22,6 +22,22 @@ class AllowDeployments(PowerProxyPlugin):
         ...
     """
 
+    client_config_jsonschema = {
+        "$schema": "http://json-schema.org/draft/2019-09/schema#",
+        "$ref": "#/definitions/ClientConfiguration",
+        "definitions": {
+            "ClientConfiguration": {
+                "type": "object",
+                "properties": {"deployments_allowed": {"$ref": "#/definitions/DeploymentsAllowed"}},
+                "required": ["deployments_allowed"],
+            },
+            "DeploymentsAllowed": {
+                "anyOf": [{"$ref": "#/definitions/DeploymentsArray"}, {"type": "string"}, {"type": "null"}],
+            },
+            "DeploymentsArray": {"type": "array", "items": {"type": "string"}},
+        },
+    }
+
     def on_client_identified(self, routing_slip):
         """Run when the client has been identified."""
         super().on_client_identified(routing_slip)
@@ -32,27 +48,11 @@ class AllowDeployments(PowerProxyPlugin):
 
         # get the deployments allowed for the client
         client_settings = self.app_configuration.get_client_settings(client)
-        if "deployments_allowed" in client_settings:
-            deployments_allowed_list = None
-            if isinstance(client_settings["deployments_allowed"], str):
-                deployments_allowed_list = [item.strip() for item in client_settings["deployments_allowed"].split(",")]
-            if isinstance(client_settings["deployments_allowed"], list):
-                deployments_allowed_list = client_settings["deployments_allowed"]
-        else:
-            raise ImmediateResponseException(
-                Response(
-                    content=json.dumps(
-                        {
-                            "error": (
-                                f"Configuration for client '{client}' misses a valid 'deployments_allowed' setting. "
-                                "This needs to be set when the AllowDeployments plugin is enabled."
-                            )
-                        }
-                    ),
-                    media_type="application/json",
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                )
-            )
+        deployments_allowed_list = []
+        if isinstance(client_settings["deployments_allowed"], str):
+            deployments_allowed_list = [item.strip() for item in client_settings["deployments_allowed"].split(",")]
+        if isinstance(client_settings["deployments_allowed"], list):
+            deployments_allowed_list = client_settings["deployments_allowed"]
 
         # raise an exception if the client tries to use a deployment which is not allowed for it
         if deployment_requested not in deployments_allowed_list:
