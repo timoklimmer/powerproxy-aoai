@@ -216,7 +216,22 @@ async def handle_request(request: Request, path: str):
             )
         client = config.key_client_map[headers["api-key"]] if client is None else client
     if "authorization" in headers:
-        client = config.entra_id_client["name"]
+        if config.entra_id_client:
+            client = config.entra_id_client["name"]
+        else:
+            raise ImmediateResponseException(
+                Response(
+                    content=json.dumps(
+                        {
+                            "error": "When Entra ID/Azure AD is used to authenticate, PowerProxy needs a client in its"
+                            "configuration configured with 'uses_entra_id_auth: true', so PowerProxy can map the "
+                            "request to a client."
+                        }
+                    ),
+                    media_type="application/json",
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                )
+            )
     routing_slip["client"] = client
     if client:
         foreach_plugin(config.plugins, "on_client_identified", routing_slip)
