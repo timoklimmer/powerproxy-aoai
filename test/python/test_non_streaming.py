@@ -1,7 +1,7 @@
 """
 Script to test the proxy's support for requests responding with a one-time response.
 
-Tested with openai package version 1.28.0.
+Tested with openai package version 1.30.3.
 """
 
 import argparse

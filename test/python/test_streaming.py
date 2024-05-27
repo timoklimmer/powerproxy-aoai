@@ -1,7 +1,7 @@
 """
 Script to test the proxy's ability to support response streaming.
 
-Tested with openai package version 1.12.0.
+Tested with openai package version 1.30.3.
 """
 
 import argparse
