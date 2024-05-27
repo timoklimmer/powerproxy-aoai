@@ -26,6 +26,7 @@ parser.add_argument(
 )
 args = parser.parse_args()
 
+failed = False
 for test_filename in sorted(os.listdir(os.getcwd())):
     if test_filename.startswith("test_"):
         header = f"Running test file '{test_filename}'..."
@@ -53,10 +54,12 @@ for test_filename in sorted(os.listdir(os.getcwd())):
             process.stdout.close()
             process.wait()
         if process.returncode != 0:
+            failed = True
             print(f"\n❌ Test '{test_filename}' failed. See the stack trace above for details.")  # pylint: disable=broad-exception-raised
             break
         print(f"\n✅ Test '{test_filename}' successful.")
 
         print("")
 
-print("\n🎉 CONGRATULATIONS -- if the script has reached to here, all tests were successful.")
+if not failed:
+    print("\n🎉 CONGRATULATIONS -- if the script has reached to here, all tests were successful.")
