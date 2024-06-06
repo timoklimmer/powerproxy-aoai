@@ -306,7 +306,7 @@ async def handle_request(request: Request, path: str):
         routing_slip["aoai_request_start_time"] = get_current_timestamp_in_ms()
 
         # send request
-        new_timeout = httpx.Timeout(timeout=5.0)
+        new_timeout = httpx.Timeout(timeout=15.0)
         new_timeout.read = 120.0
         aoai_request = aoai_target["endpoint_client"].build_request(
             request.method,
