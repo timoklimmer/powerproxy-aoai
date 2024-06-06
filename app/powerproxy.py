@@ -65,6 +65,7 @@ async def lifespan(app: FastAPI):
     # collect AOAI targets (endpoints or deployments) and corresponding clients
     app.state.aoai_endpoint_clients = {}
     app.state.aoai_targets = {}
+    app.state.virtual_deployment_names = []
     if config.get("aoai/mock_response"):
 
         async def get_mock_response(request):
@@ -92,6 +93,7 @@ async def lifespan(app: FastAPI):
             app.state.aoai_endpoint_clients[endpoint["name"]] = httpx.AsyncClient(base_url=endpoint["url"])
             if "virtual_deployments" in endpoint:
                 for virtual_deployment in endpoint["virtual_deployments"]:
+                    app.state.virtual_deployment_names.append(virtual_deployment["name"])
                     for standin in virtual_deployment["standins"]:
                         target_name = f"{standin['name']}@{virtual_deployment['name']}@{endpoint['name']}"
                         app.state.aoai_targets[target_name] = {
@@ -235,6 +237,24 @@ async def handle_request(request: Request, path: str):
     routing_slip["client"] = client
     if client:
         foreach_plugin(config.plugins, "on_client_identified", routing_slip)
+
+    # if virtual deployments are used, make sure the requested deployment is configured
+    if (
+        app.state.virtual_deployment_names
+        and routing_slip["virtual_deployment"] not in app.state.virtual_deployment_names
+    ):
+        raise ImmediateResponseException(
+            Response(
+                content=json.dumps(
+                    {
+                        "error": f"The specified deployment '{routing_slip['virtual_deployment']}' is not available. "
+                        "Ensure that you send the request to an existing virtual deployment configured in PowerProxy."
+                    }
+                ),
+                media_type="application/json",
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
+        )
 
     # get response from AOAI by iterating through the configured targets (endpoints or deployments)
     aoai_response: httpx.Response = None
