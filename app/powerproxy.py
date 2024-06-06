@@ -336,7 +336,7 @@ async def handle_request(request: Request, path: str):
                 content=json.dumps(
                     {"message": "Could not find any endpoint or deployment with remaining capacity. Try again later."}
                 ),
-                headers={"retry-after-ms", 10_000},
+                headers={"retry-after-ms": f"{10_000}"},
                 media_type="application/json",
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             )
