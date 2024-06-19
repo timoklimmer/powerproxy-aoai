@@ -323,12 +323,14 @@ async def handle_request(request: Request, path: str):
         # got http code other than 200
         if aoai_response.status_code != 200:
             # print infos to console
+            if not routing_slip["is_non_streaming_response_requested"]:
+                await aoai_response.aread()
             print(
                 (
                     f"Unexpected HTTP Code {aoai_response.status_code} while using target '{aoai_target['name']}'. "
-                    f"Text: {aoai_response.text} "
                     f"Path: {routing_slip['path']} "
-                    f"Url: {aoai_target['url']}"
+                    f"Target Url: {aoai_target['url']}"
+                    f"Response: {await aoai_response.text()} "
                 )
             )
         # got 429 or 500
