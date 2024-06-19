@@ -20,6 +20,7 @@ import uvicorn
 from fastapi import FastAPI, Request, status
 from fastapi.responses import Response, StreamingResponse
 from helpers.config import Configuration
+from helpers.dicts import QueryDict
 from helpers.header import print_header
 from plugins.base import ImmediateResponseException, foreach_plugin
 from version import VERSION
@@ -90,7 +91,35 @@ async def lifespan(app: FastAPI):
         }
     else:
         for endpoint in config["aoai/endpoints"]:
-            app.state.aoai_endpoint_clients[endpoint["name"]] = httpx.AsyncClient(base_url=endpoint["url"])
+            endpoint_qd = QueryDict(endpoint)
+            limits = httpx.Limits(
+                max_keepalive_connections=int(endpoint_qd["connections/limits/max_keepalive_connections"])
+                if endpoint_qd["connections/limits/max_keepalive_connections"]
+                else 20,
+                max_connections=int(endpoint_qd["connections/limits/max_connections"])
+                if endpoint_qd["connections/limits/max_connections"]
+                else 100,
+                keepalive_expiry=float(endpoint_qd["connections/limits/keepalive_expiry"])
+                if endpoint_qd["connections/limits/keepalive_expiry"]
+                else 5.0,
+            )
+            timeout = httpx.Timeout(
+                connect=float(endpoint_qd["connections/timeouts/connect"])
+                if endpoint_qd["connections/timeouts/connect"]
+                else 15.0,
+                read=float(endpoint_qd["connections/timeouts/read"])
+                if endpoint_qd["connections/timeouts/read"]
+                else 120.0,
+                write=float(endpoint_qd["connections/timeouts/write"])
+                if endpoint_qd["connections/timeouts/write"]
+                else 120.0,
+                pool=float(endpoint_qd["connections/timeouts/pool"])
+                if endpoint_qd["connections/timeouts/pool"]
+                else 120.0,
+            )
+            app.state.aoai_endpoint_clients[endpoint["name"]] = httpx.AsyncClient(
+                base_url=endpoint["url"], timeout=timeout, limits=limits
+            )
             if "virtual_deployments" in endpoint:
                 for virtual_deployment in endpoint["virtual_deployments"]:
                     app.state.virtual_deployment_names.append(virtual_deployment["name"])
@@ -306,12 +335,9 @@ async def handle_request(request: Request, path: str):
         routing_slip["aoai_request_start_time"] = get_current_timestamp_in_ms()
 
         # send request
-        new_timeout = httpx.Timeout(timeout=15.0)
-        new_timeout.read = 120.0
         aoai_request = aoai_target["endpoint_client"].build_request(
             request.method,
             routing_slip["path"],
-            timeout=new_timeout,
             params=request.query_params,
             headers=headers,
             content=routing_slip["incoming_request_body"],
@@ -320,8 +346,8 @@ async def handle_request(request: Request, path: str):
             aoai_request,
             stream=(not routing_slip["is_non_streaming_response_requested"]),
         )
-        # got http code other than 200
-        if aoai_response.status_code != 200:
+        # got http code other than 200 or 401
+        if aoai_response.status_code not in [200, 401]:
             # print infos to console
             if not routing_slip["is_non_streaming_response_requested"]:
                 await aoai_response.aread()
@@ -330,7 +356,7 @@ async def handle_request(request: Request, path: str):
                     f"Unexpected HTTP Code {aoai_response.status_code} while using target '{aoai_target['name']}'. "
                     f"Path: {routing_slip['path']} "
                     f"Target Url: {aoai_target['url']}"
-                    f"Response: {await aoai_response.text()} "
+                    f"Response: {aoai_response.text}"
                 )
             )
         # got 429 or 500

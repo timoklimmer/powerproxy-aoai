@@ -157,6 +157,17 @@
                     "minimum": 0,
                     "maximum": 1
                 },
+                "connections": {
+                    "type": "object",
+                    "properties": {
+                        "limits": {
+                            "$ref": "#/definitions/Limits"
+                        },
+                        "timeouts": {
+                            "$ref": "#/definitions/Timeouts"
+                        }
+                    }
+                },
                 "virtual_deployments": {
                     "$ref": "#/definitions/VirtualDeployments"
                 }
@@ -165,6 +176,37 @@
                 "name",
                 "url"
             ]
+        },
+        "Limits": {
+            "type": "object",
+            "properties": {
+                "max_keepalive_connections": {
+                    "type": "integer"
+                },
+                "max_connections": {
+                    "type": "integer"
+                },
+                "keepalive_expiry": {
+                    "type": "number"
+                }
+            }
+        },
+        "Timeouts": {
+            "type": "object",
+            "properties": {
+                "connect": {
+                    "type": "number"
+                },
+                "read": {
+                    "type": "number"
+                },
+                "write": {
+                    "type": "number"
+                },
+                "pool": {
+                    "type": "number"
+                }
+            }
         },
         "VirtualDeployments": {
             "type": "array",

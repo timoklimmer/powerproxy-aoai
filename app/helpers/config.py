@@ -133,8 +133,10 @@ class Configuration:
             Configuration.print_setting_header("Azure OpenAI")
             for aoai_endpoint in self["aoai/endpoints"]:
                 Configuration.print_line(f"{aoai_endpoint['name']} - {aoai_endpoint['url']}", level=1)
-                for item in aoai_endpoint.keys() - ["name", "url", "key", "virtual_deployments"]:
+                for item in aoai_endpoint.keys() - ["name", "url", "key", "connections", "virtual_deployments"]:
                     Configuration.print_line(f"{item}: {aoai_endpoint[item]}", level=2)
+                if "connections" in aoai_endpoint:
+                    Configuration.print_setting("Connections", f"{aoai_endpoint['connections']}", level=2)
                 if "virtual_deployments" in aoai_endpoint:
                     for deployment in aoai_endpoint["virtual_deployments"]:
                         Configuration.print_line(f"- {deployment['name']}", level=2)
