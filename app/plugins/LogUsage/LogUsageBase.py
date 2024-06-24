@@ -41,6 +41,7 @@ class LogUsageBase(TokenCountingPlugin):
             aoai_endpoint=routing_slip["aoai_endpoint"],
             aoai_virtual_deployment=routing_slip["aoai_virtual_deployment"],
             aoai_standin_deployment=routing_slip["aoai_standin_deployment"],
+            aoai_api_version=routing_slip["api_version"],
         )
 
     def on_end_of_target_response_stream_reached(self, routing_slip):
@@ -59,6 +60,7 @@ class LogUsageBase(TokenCountingPlugin):
             aoai_endpoint=routing_slip["aoai_endpoint"],
             aoai_virtual_deployment=routing_slip["aoai_virtual_deployment"],
             aoai_standin_deployment=routing_slip["aoai_standin_deployment"],
+            aoai_api_version=routing_slip["api_version"],
         )
 
     @abstractmethod
@@ -75,5 +77,6 @@ class LogUsageBase(TokenCountingPlugin):
         aoai_endpoint,
         aoai_virtual_deployment,
         aoai_standin_deployment,
+        aoai_api_version,
     ):
         pass

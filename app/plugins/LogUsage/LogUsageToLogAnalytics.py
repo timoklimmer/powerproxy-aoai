@@ -110,6 +110,7 @@ class LogUsageToLogAnalytics(LogUsageBase):
         aoai_endpoint,
         aoai_virtual_deployment,
         aoai_standin_deployment,
+        aoai_api_version,
     ):
         """Append a new line with the given infos."""
         # pylint: disable=no-value-for-parameter
@@ -129,6 +130,7 @@ class LogUsageToLogAnalytics(LogUsageBase):
                     "AoaiEndpoint": aoai_endpoint,
                     "AoaiVirtualDeployment": aoai_virtual_deployment,
                     "AoaiStandinDeployment": aoai_standin_deployment,
+                    "AoaiApiVersion": aoai_api_version,
                 }
             ],
         )

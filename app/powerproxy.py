@@ -214,6 +214,7 @@ async def handle_request(request: Request, path: str):
         "stream" in routing_slip["incoming_request_body_dict"]
         and str(routing_slip["incoming_request_body_dict"]["stream"]).lower() == "true"
     )
+    routing_slip["api_version"] = request.query_params["api-version"] if "api-version" in request.query_params else ""
     foreach_plugin(config.plugins, "on_new_request_received", routing_slip)
 
     # identify client

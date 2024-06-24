@@ -25,6 +25,7 @@ class LogUsageToCsvFile(LogUsageBase):
         "aoai_endpoint",
         "aoai_virtual_deployment",
         "aoai_standin_deployment",
+        "aoai_api_version",
     ]
 
     def on_plugin_instantiated(self):
@@ -57,6 +58,7 @@ class LogUsageToCsvFile(LogUsageBase):
         aoai_endpoint,
         aoai_virtual_deployment,
         aoai_standin_deployment,
+        aoai_api_version,
     ):
         """Append a new line with the given infos."""
         with open(self.log_file_path, "a", encoding="utf-8") as log_file:
@@ -72,5 +74,6 @@ class LogUsageToCsvFile(LogUsageBase):
                 f"{aoai_region},"
                 f"{aoai_endpoint},"
                 f"{aoai_virtual_deployment or ''},"
-                f"{aoai_standin_deployment or ''}"
+                f"{aoai_standin_deployment or ''},"
+                f"{aoai_api_version or ''}"
             )

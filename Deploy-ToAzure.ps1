@@ -228,7 +228,8 @@ az monitor log-analytics workspace table create `
     AoaiRegion=string `
     AoaiEndpoint=string `
     AoaiVirtualDeployment=string `
-    AoaiStandinDeployment=string
+    AoaiStandinDeployment=string `
+    AoaiApiVersion=string
 # data collection endpoint
 Write-Host "Creating data collection endpoint..." -ForegroundColor Blue
 $DATA_COLLECTION_ENDPOINT_IMMUTABLE_ID = (az monitor data-collection endpoint create `

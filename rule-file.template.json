@@ -47,6 +47,10 @@
                     {
                         "name": "AoaiStandinDeployment",
                         "type": "string"
+                    },
+                    {
+                        "name": "AoaiApiVersion",
+                        "type": "string"
                     }
                 ]
             }

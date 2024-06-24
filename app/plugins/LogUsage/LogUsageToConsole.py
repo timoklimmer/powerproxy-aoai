@@ -19,6 +19,7 @@ class LogUsageToConsole(LogUsageBase):
         aoai_endpoint,
         aoai_virtual_deployment,
         aoai_standin_deployment,
+        aoai_api_version,
     ):
         """Append a new line with the given infos."""
         print(
@@ -34,4 +35,5 @@ class LogUsageToConsole(LogUsageBase):
             f"Azure OpenAI Endpoint           : {aoai_endpoint}\n"
             f"Azure OpenAI Virtual Deployment : {aoai_virtual_deployment}\n"
             f"Azure OpenAI Standin Deployment : {aoai_standin_deployment}\n"
+            f"Azure OpenAI API Version        : {aoai_api_version}\n"
         )
