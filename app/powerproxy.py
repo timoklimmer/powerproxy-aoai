@@ -255,7 +255,7 @@ async def handle_request(request: Request, path: str):
                 Response(
                     content=json.dumps(
                         {
-                            "error": "When Entra ID/Azure AD is used to authenticate, PowerProxy needs a client in its"
+                            "error": "When Entra ID/Azure AD is used to authenticate, PowerProxy needs a client in its "
                             "configuration configured with 'uses_entra_id_auth: true', so PowerProxy can map the "
                             "request to a client."
                         }
