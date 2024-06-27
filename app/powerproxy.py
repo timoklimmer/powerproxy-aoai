@@ -247,7 +247,7 @@ async def handle_request(request: Request, path: str):
                 )
             )
         client = config.key_client_map[headers["api-key"]] if client is None else client
-    if "authorization" in headers:
+    elif "authorization" in headers:
         if config.entra_id_client:
             client = config.entra_id_client["name"]
         else:

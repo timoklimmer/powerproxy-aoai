@@ -105,6 +105,12 @@ response = send_post_request(
 )
 assert response.status_code == 200
 
+# same API key and Bearer token
+# note: some openai package versions use this
+print("Testing regular API key and same API key in Authorization: Bearer...")
+response = send_post_request(api_key=args.api_key, authorization_token=args.api_key)
+assert response.status_code == 200
+
 # wrong authentication token
 print("Testing wrong Entra ID/Azure AD authentication...")
 response = send_post_request(authorization_token="ThisShouldBreakByIntention")
