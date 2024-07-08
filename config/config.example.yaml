@@ -47,14 +47,15 @@ plugins:
   - name: LogUsageToLogAnalytics
     log_ingestion_endpoint: <will be set by deployment script>
     data_collection_rule_id: <will be set by deployment script>
-    # by default, we use the managed identity in the resource group to auth against Log Analytics.
-    # if the managed identity cannot be used, as an alternative, credentials of a service principal
-    # can be specified here. make sure that the managed identity/service principle have the
-    # "Monitoring Metrics Publisher" role assigned to the Data Collection Rule (it might take up
-    # to 30 minutes to become effective after configuration).
+    # By default, the DefaultAzureCredential class is used to authenticate against Log Analytics, which automatically
+    # tries workload identites, managed identities, etc. However, if a user_assigned_managed_identity_client_id is
+    # specified in this config file below, that user-assigned managed identity will be used.
+    # Alternatively, credentials of a service principal can be specified here by using the following fields.
     #credential_tenant_id: ___
     #credential_client_id: ___
     #credential_client_secret: ___
+    # In any case, make sure that the used identity has the "Monitoring Metrics Publisher" role assigned to the Data
+    # Collection Rule (it might take up to 30 minutes to become effective after configuration).
 
 # Azure OpenAI
 aoai:
