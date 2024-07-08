@@ -132,11 +132,13 @@ and `Import-ConfigFromAzure.ps1` scripts. First, export the config to a local YA
 the file, and afterwards import it into Azure again.
 
 ## Known Issues
-- Due to limitations by OpenAI, the exact number of consumed tokens is not available when requests
-ask for a streaming response. In that case, an approximation based on code provided by OpenAI is
+- Due to limitations by OpenAI, the exact number of consumed tokens may not be available when requests
+ask for a streaming response. In that case, an estimation based on code provided by OpenAI is
 used. Once exact numbers are available for streaming responses, this repo will be updated (will be
 available in Azure soon). For non-streaming responses, token numbers are exact.
-- Does not integrate with the Chat Playground in Azure OpenAI because there is no way to inject
+- Whisper does not have a concept of tokens. Hence, features basing on tokens such as token counting are not available
+for Whisper models.
+- PowerProxy cannot be integrated with the Chat Playground in Azure OpenAI because there is no way to inject
 PowerProxy in between.
 
 ## Authors
