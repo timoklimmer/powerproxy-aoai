@@ -19,7 +19,10 @@ parser.add_argument(
     "--api-key", type=str, default="04ae14bc78184621d37f1ce57a52eb7", help="API key to access PowerProxy"
 )
 parser.add_argument(
-    "--deployment-name", type=str, default="gpt-4-turbo", help="Name of Azure OpenAI deployment to test"
+    "--deployment-name", type=str, default="gpt-4-turbo", help="Name of Azure OpenAI deployment to test (default)"
+)
+parser.add_argument(
+    "--deployment-name-whisper", type=str, default="whisper", help="Name of Azure OpenAI deployment to test (Whisper)"
 )
 parser.add_argument(
     "--api-version", type=str, default="2024-02-01", help="API version to use when accessing Azure OpenAI"
@@ -29,9 +32,10 @@ args = parser.parse_args()
 failed = False
 for test_filename in sorted(os.listdir(os.getcwd())):
     if test_filename.startswith("test_"):
-        header = f"Running test file '{test_filename}'..."
+        deployment = args.deployment_name_whisper if test_filename.endswith("_whisper.py") else args.deployment_name
+        header = f"Running test file '{test_filename}' on deployment '{deployment}'..."
         print("-" * len(header))
-        print(f"Running test file '{test_filename}'...")
+        print(header)
         print("-" * len(header))
         with subprocess.Popen(
             [
@@ -42,7 +46,7 @@ for test_filename in sorted(os.listdir(os.getcwd())):
                 "--api-key",
                 args.api_key,
                 "--deployment-name",
-                args.deployment_name,
+                deployment,
                 "--api-version",
                 args.api_version,
             ],

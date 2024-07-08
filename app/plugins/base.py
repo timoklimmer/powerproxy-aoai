@@ -89,10 +89,12 @@ class TokenCountingPlugin(PowerProxyPlugin):
         """Run when the body was received from AOAI (only for one-time, non-streaming requests)."""
         super().on_body_dict_from_target_available(routing_slip)
 
-        usage = routing_slip["body_dict_from_target"]["usage"]
-        self.completion_tokens = usage.get("completion_tokens", 0)
-        self.prompt_tokens = usage["prompt_tokens"]
-        self.total_tokens = usage["total_tokens"]
+        usage = (
+            routing_slip["body_dict_from_target"]["usage"] if "usage" in routing_slip["body_dict_from_target"] else None
+        )
+        self.completion_tokens = usage.get("completion_tokens", 0) if usage else 0
+        self.prompt_tokens = usage["prompt_tokens"] if usage else 0
+        self.total_tokens = usage["total_tokens"] if usage else 0
 
         self.on_token_counts_for_request_available(routing_slip)
 
