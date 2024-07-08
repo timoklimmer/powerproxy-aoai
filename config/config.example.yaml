@@ -63,7 +63,8 @@ aoai:
   endpoints:
     - name: Some Endpoint
       url: https://___.openai.azure.com/
-      # not required when clients use Azure OpenAI's Azure AD/Entra ID authentication mechanism
+      # not required when clients send their own bearer token or when DefaultAzureCredentials are to be used for the
+      # authentication against AOAI (for example: Managed Identity, Workload Identity, Azure CLI Credentials etc.)
       key: ___
       # fraction of non-streaming requests handled
       # 0   = endpoint will handle no non-streaming request

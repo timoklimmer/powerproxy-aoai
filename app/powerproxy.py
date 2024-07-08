@@ -17,6 +17,7 @@ from datetime import datetime, timezone
 
 import httpx
 import uvicorn
+from azure.identity import DefaultAzureCredential
 from fastapi import FastAPI, Request, status
 from fastapi.responses import Response, StreamingResponse
 from helpers.config import Configuration
@@ -150,6 +151,9 @@ async def lifespan(app: FastAPI):
                         endpoint["non_streaming_fraction"] if "non_streaming_fraction" in endpoint else 1
                     ),
                 } | ({"endpoint_key": endpoint["key"]} if "key" in endpoint else {})
+
+    # get DefaultAzureCredential
+    app.state.default_azure_credential = DefaultAzureCredential()
 
     # print serve notification
     print()
@@ -310,8 +314,8 @@ async def handle_request(request: Request, path: str):
         ):
             continue
 
-        # replace API key against real API key from AOAI, but only if the request has an API key and if we have an API
-        # key for the real AOAI endpoint
+        # update auth headers against real API key from AOAI/Entra ID bearer token for AOAI, but only if the request has
+        # a (previously successfully verified) API key
         # note: intentionally not raising an exception here if an API key is missing to support requests using
         #       Azure AD/Entra ID authentication. Entra ID requests miss an api-key header but have an Authorization
         #       header, and we pass that as is, so AOAI will do the authentication then for us.
@@ -320,6 +324,10 @@ async def handle_request(request: Request, path: str):
                 headers["api-key"] = aoai_target["endpoint_key"] or ""
             else:
                 del headers["api-key"]
+                token = app.state.default_azure_credential.get_token(
+                    "https://cognitiveservices.azure.com/.default"
+                ).token
+                headers["Authorization"] = f"Bearer {token}"
 
         # replace deployment against standin in path if target is deployment standin
         if aoai_target["type"] == "virtual_deployment_standin":
