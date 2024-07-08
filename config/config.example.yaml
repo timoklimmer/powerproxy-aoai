@@ -48,9 +48,10 @@ plugins:
     log_ingestion_endpoint: <will be set by deployment script>
     data_collection_rule_id: <will be set by deployment script>
     # By default, the DefaultAzureCredential class is used to authenticate against Log Analytics, which automatically
-    # tries workload identites, managed identities, etc. However, if a user_assigned_managed_identity_client_id is
-    # specified in this config file below, that user-assigned managed identity will be used.
-    # Alternatively, credentials of a service principal can be specified here by using the following fields.
+    # tries workload identites, system-managed managed identities, etc. However, if a
+    # user_assigned_managed_identity_client_id is specified in this config file below, that user-assigned managed
+    # identity will be used. Alternatively, credentials of a service principal can be specified here by using the
+    # following fields.
     #credential_tenant_id: ___
     #credential_client_id: ___
     #credential_client_secret: ___
@@ -62,7 +63,7 @@ aoai:
   endpoints:
     - name: Some Endpoint
       url: https://___.openai.azure.com/
-      # not required when Azure OpenAI's Azure AD/Entra ID authentication is used
+      # not required when clients use Azure OpenAI's Azure AD/Entra ID authentication mechanism
       key: ___
       # fraction of non-streaming requests handled
       # 0   = endpoint will handle no non-streaming request
@@ -152,5 +153,5 @@ resource_group: ___
 unique_prefix: ___
 
 # id of the user-assigned managed identity
-# note: PowerProxy will assume a system-assigned managed identity if not specified
+# note: PowerProxy will assume a system-assigned managed or workload identity if not specified
 user_assigned_managed_identity_client_id: <will be set by deployment script>
