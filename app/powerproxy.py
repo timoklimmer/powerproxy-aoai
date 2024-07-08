@@ -324,6 +324,10 @@ async def handle_request(request: Request, path: str):
                 headers["api-key"] = aoai_target["endpoint_key"] or ""
             else:
                 del headers["api-key"]
+                if "authorization" in headers:
+                    del headers["authorization"]
+                if "Authorization" in headers:
+                    del headers["Authorization"]
                 token = app.state.default_azure_credential.get_token(
                     "https://cognitiveservices.azure.com/.default"
                 ).token
