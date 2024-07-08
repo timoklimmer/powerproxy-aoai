@@ -18,7 +18,7 @@ class AllowDeployments(PowerProxyPlugin):
         ...
         clients:
            - name: Team 1
-             deployments_allowed: gpt-35-turbo, gpt-4-turbo
+             deployments_allowed: gpt-35-turbo, gpt-4o
         ...
     """
 

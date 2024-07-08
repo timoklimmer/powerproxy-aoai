@@ -6,31 +6,31 @@ clients:
   - name: Team 1
     description: An example team named 'Team 1'.
     key: 28ef59ae30342978f81c4ad96ce47ab
-    deployments_allowed: gpt-35-turbo, gpt-4-turbo
+    deployments_allowed: gpt-35-turbo, gpt-4o
     max_tokens_per_minute_in_k:
       gpt-35-turbo: 20
-      gpt-4-turbo: 5
+      gpt-4o: 5
   - name: Team 2
     description: An example team named 'Team 2'.
     key: 1113456789abcdef0123456789abcde
     deployments_allowed:
       - gpt-35-turbo
-      - gpt-4-turbo
+      - gpt-4o
     max_tokens_per_minute_in_k: 30
   - name: Test Script Client 1
     description: Used by the included test scripts.
     key: 04ae14bc78184621d37f1ce57a52eb7
-    deployments_allowed: [gpt-35-turbo, gpt-4-turbo]
+    deployments_allowed: [gpt-35-turbo, gpt-4o]
     max_tokens_per_minute_in_k: 5
   - name: Test Script Client 2
     description: Used by the included test scripts.
     key: 72bd81ef32763530b29e3da63d46ad6
-    deployments_allowed: gpt-35-turbo, gpt-4-turbo
+    deployments_allowed: gpt-35-turbo, gpt-4o
     max_tokens_per_minute_in_k: 5
   - name: Entra ID Auth Client
     description: Client used whenever a client authenticates via Entra ID / Azure AD.
     uses_entra_id_auth: true
-    deployments_allowed: gpt-35-turbo, gpt-4-turbo
+    deployments_allowed: gpt-35-turbo, gpt-4o
     max_tokens_per_minute_in_k: 10
 
 # defines the plugins enabled for the proxy
@@ -94,11 +94,11 @@ aoai:
             - name: gpt-35-turbo-ptu
               non_streaming_fraction: 0.2
             - name: gpt-35-turbo-paygo
-        - name: gpt-4-turbo
+        - name: gpt-4o
           standins:
-            - name: gpt-4-turbo-ptu
+            - name: gpt-4o-ptu
               non_streaming_fraction: 0.2
-            - name: gpt-4-turbo-paygo
+            - name: gpt-4o-paygo
 
     - name: Another Endpoint
       # ... (see above)

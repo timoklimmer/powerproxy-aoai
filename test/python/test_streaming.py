@@ -16,9 +16,7 @@ parser.add_argument(
 parser.add_argument(
     "--api-key", type=str, default="04ae14bc78184621d37f1ce57a52eb7", help="API key to access PowerProxy"
 )
-parser.add_argument(
-    "--deployment-name", type=str, default="gpt-4-turbo", help="Name of Azure OpenAI deployment to test"
-)
+parser.add_argument("--deployment-name", type=str, default="gpt-4o", help="Name of Azure OpenAI deployment to test")
 parser.add_argument(
     "--api-version", type=str, default="2024-02-01", help="API version to use when accessing Azure OpenAI"
 )

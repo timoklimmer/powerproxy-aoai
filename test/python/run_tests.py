@@ -19,7 +19,7 @@ parser.add_argument(
     "--api-key", type=str, default="04ae14bc78184621d37f1ce57a52eb7", help="API key to access PowerProxy"
 )
 parser.add_argument(
-    "--deployment-name", type=str, default="gpt-4-turbo", help="Name of Azure OpenAI deployment to test (default)"
+    "--deployment-name", type=str, default="gpt-4o", help="Name of Azure OpenAI deployment to test (default)"
 )
 parser.add_argument(
     "--deployment-name-whisper", type=str, default="whisper", help="Name of Azure OpenAI deployment to test (Whisper)"
