@@ -1,6 +1,6 @@
 """Declares a plugin to log usage infos to a CSV file."""
 
-from azure.identity import ClientSecretCredential, ManagedIdentityCredential
+from azure.identity import ClientSecretCredential, DefaultAzureCredential, ManagedIdentityCredential
 from azure.monitor.ingestion import LogsIngestionClient
 from helpers.config import Configuration
 from helpers.dicts import QueryDict
@@ -49,11 +49,13 @@ class LogUsageToLogAnalytics(LogUsageBase):
         self.credential_tenant_id = plugin_configuration.get("credential_tenant_id")
         self.credential_client_id = plugin_configuration.get("credential_client_id")
         self.credential_client_secret = plugin_configuration.get("credential_client_secret")
-        self.auth_mechanism = (
-            "ClientSecretCredential"
-            if (self.credential_tenant_id and self.credential_client_id and self.credential_client_secret)
-            else "ManagedIdentityCredential"
-        )
+
+        self.auth_mechanism = "DefaultAzureCredential"
+        if self.credential_tenant_id and self.credential_client_id and self.credential_client_secret:
+            self.auth_mechanism = "ClientSecretCredential"
+        elif self.user_assigned_managed_identity_client_id:
+            self.auth_mechanism = "UserAssignedManagedIdentityCredential"
+
         self.data_collection_rule_id = plugin_configuration.get("data_collection_rule_id")
         self.stream_name = "Custom-AzureOpenAIUsage_PP_CL"
 
@@ -63,17 +65,17 @@ class LogUsageToLogAnalytics(LogUsageBase):
 
         # get credentials for Log Analytics client
         credential = None
-        if self.auth_mechanism == "ClientSecretCredential":
-            credential = ClientSecretCredential(
-                tenant_id=self.credential_tenant_id,
-                client_id=self.credential_client_id,
-                client_secret=self.credential_client_secret,
-            )
-        elif self.auth_mechanism == "ManagedIdentityCredential" and self.user_assigned_managed_identity_client_id:
-            credential = ManagedIdentityCredential(client_id=self.user_assigned_managed_identity_client_id)
-
-        else:
-            credential = ManagedIdentityCredential()
+        match self.auth_mechanism:
+            case "ClientSecretCredential":
+                credential = ClientSecretCredential(
+                    tenant_id=self.credential_tenant_id,
+                    client_id=self.credential_client_id,
+                    client_secret=self.credential_client_secret,
+                )
+            case "UserAssignedManagedIdentityCredential":
+                credential = ManagedIdentityCredential(client_id=self.user_assigned_managed_identity_client_id)
+            case _:
+                credential = DefaultAzureCredential()
 
         # get Log Analytics client
         self.log_analytics_client = LogsIngestionClient(
@@ -89,13 +91,14 @@ class LogUsageToLogAnalytics(LogUsageBase):
         Configuration.print_setting("Log ingestion endpoint", self.log_ingestion_endpoint, 1)
         Configuration.print_setting("Data Collection Rule ID", self.data_collection_rule_id, 1)
         Configuration.print_setting("Authentication mechanism", self.auth_mechanism, 1)
-        if self.auth_mechanism == "ClientSecretCredential":
-            Configuration.print_setting("Credential Tenant ID", self.credential_tenant_id, 1)
-            Configuration.print_setting("Credential Client ID", self.credential_client_id, 1)
-        if self.auth_mechanism == "ManagedIdentityCredential" and self.user_assigned_managed_identity_client_id:
-            Configuration.print_setting(
-                "User-Assigned Managed Credential ID", self.user_assigned_managed_identity_client_id, 1
-            )
+        match self.auth_mechanism:
+            case "ClientSecretCredential":
+                Configuration.print_setting("Credential Tenant ID", self.credential_tenant_id, 1)
+                Configuration.print_setting("Credential Client ID", self.credential_client_id, 1)
+            case "UserAssignedManagedIdentityCredential":
+                Configuration.print_setting(
+                    "User-Assigned Managed Credential ID", self.user_assigned_managed_identity_client_id, 1
+                )
 
     def _append_line(
         self,
