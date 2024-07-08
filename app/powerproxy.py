@@ -409,7 +409,7 @@ async def handle_request(request: Request, path: str):
 
     # determine if it's actually an event stream or not
     routing_slip["is_event_stream"] = (
-        "content-type" in aoai_response.headers and aoai_response.headers["content-type"] == "text/event-stream"
+        "content-type" in aoai_response.headers and "text/event-stream" in aoai_response.headers["content-type"]
     )
 
     # return different response types depending if it's an event stream or not
