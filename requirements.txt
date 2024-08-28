@@ -1,7 +1,7 @@
 PyYAML==6.0.2
 httpx==0.27.2
 uvicorn[standard]==0.30.6
-fastapi==0.112.0
+fastapi==0.112.2
 tiktoken==0.7.0
 azure-identity==1.17.1
 azure-monitor-ingestion==1.0.4
