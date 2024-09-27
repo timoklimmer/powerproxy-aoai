@@ -1,6 +1,7 @@
 """Defines the foundation for PowerProxy plugins."""
 
 import importlib
+import json
 import re
 
 from helpers.tokens import estimate_prompt_tokens_from_request_body_dict
@@ -70,10 +71,9 @@ class TokenCountingPlugin(PowerProxyPlugin):
     """A plugin which counts tokens."""
 
     prompt_tokens = None
-    streaming_prompt_tokens = None
     completion_tokens = None
-    streaming_completion_tokens = None
     total_tokens = None
+    last_seen_usage_object_in_data_event = None
 
     def on_new_request_received(self, routing_slip):
         """Run when a new request is received."""
@@ -81,9 +81,8 @@ class TokenCountingPlugin(PowerProxyPlugin):
 
         self.prompt_tokens = None
         self.completion_tokens = None
-        self.streaming_prompt_tokens = None
-        self.streaming_completion_tokens = None
         self.total_tokens = None
+        self.last_seen_usage_object_in_data_event = None
 
     def on_body_dict_from_target_available(self, routing_slip):
         """Run when the body was received from AOAI (only for one-time, non-streaming requests)."""
@@ -102,21 +101,30 @@ class TokenCountingPlugin(PowerProxyPlugin):
         """Run when a data event has been received by AOAI (needs streaming requested)."""
         super().on_data_event_from_target_received(routing_slip)
 
-        self.streaming_completion_tokens = (
-            self.streaming_completion_tokens + 1 if self.streaming_completion_tokens else 1
-        )
+        self.completion_tokens = self.completion_tokens + 1 if self.completion_tokens else 1
+        if "data_from_target" in routing_slip and "usage" in routing_slip["data_from_target"]:
+            self.last_seen_usage_object_in_data_event = json.loads(routing_slip["data_from_target"])["usage"]
 
     def on_end_of_target_response_stream_reached(self, routing_slip):
         """Process the end of a stream (needs streaming requested)."""
         super().on_end_of_target_response_stream_reached(routing_slip)
 
-        self.prompt_tokens = estimate_prompt_tokens_from_request_body_dict(routing_slip["incoming_request_body_dict"])
-        self.completion_tokens = self.streaming_completion_tokens
-        self.total_tokens = (
-            self.prompt_tokens + self.completion_tokens
-            if self.prompt_tokens is not None and self.completion_tokens is not None
-            else None
-        )
+        if self.last_seen_usage_object_in_data_event:
+            # use usage info from response
+            usage = self.last_seen_usage_object_in_data_event
+            self.completion_tokens = usage.get("completion_tokens", 0) if usage else 0
+            self.prompt_tokens = usage["prompt_tokens"] if usage else 0
+            self.total_tokens = usage["total_tokens"] if usage else 0
+        else:
+            # estimate usage
+            self.prompt_tokens = estimate_prompt_tokens_from_request_body_dict(
+                routing_slip["incoming_request_body_dict"]
+            )
+            self.total_tokens = (
+                self.prompt_tokens + self.completion_tokens
+                if self.prompt_tokens is not None and self.completion_tokens is not None
+                else None
+            )
         self.on_token_counts_for_request_available(routing_slip)
 
     def on_token_counts_for_request_available(self, routing_slip):
