@@ -1,7 +1,7 @@
 """
 Script to test the proxy's ability to support response streaming when functions are used.
 
-Tested with openai package version 1.30.3.
+Tested with openai package version 1.35.10.
 """
 
 import argparse
@@ -18,7 +18,7 @@ parser.add_argument(
 )
 parser.add_argument("--deployment-name", type=str, default="gpt-4o", help="Name of Azure OpenAI deployment to test")
 parser.add_argument(
-    "--api-version", type=str, default="2024-02-01", help="API version to use when accessing Azure OpenAI"
+    "--api-version", type=str, default="2024-06-01", help="API version to use when accessing Azure OpenAI"
 )
 args, unknown = parser.parse_known_args()
 

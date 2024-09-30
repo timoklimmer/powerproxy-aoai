@@ -1,52 +1,45 @@
-### against real AOAI
+"""
+Script to test the proxy's support for requests responding with a one-time response (containing an image in the prompt).
 
-POST https://___.openai.azure.com/openai/deployments/gpt-35-turbo/chat/completions?api-version=2024-06-01 HTTP/1.1
-Content-Type: application/json
-Connection: keep-alive
-api-key: ___
-X-OpenAI-Client-User-Agent: {"bindings_version": "0.27.8", "httplib": "requests", "lang": "python", "lang_version": "3.11.4", "platform": "Windows-10-10.0.22621-SP0", "publisher": "openai", "uname": "Windows 10 10.0.22621 AMD64 Intel64 Family 6 Model 142 Stepping 10, GenuineIntel"}
-User-Agent: OpenAI/v1 PythonBindings/0.27.8
-Accept-Encoding: gzip, deflate
-Accept: */*
+Tested with openai package version 1.35.10.
+"""
 
-{"messages": [{"role": "system", "content": "You are an AI assistant that helps people find information."}, {"role": "user", "content": "Tell me a joke!"}, {"role": "assistant", "content": "Why did the tomato turn red? Because it saw the salad dressing!"}, {"role": "user", "content": "Yeah, that's a great one."}], "temperature": 0, "max_tokens": 800, "top_p": 0.95, "frequency_penalty": 0, "presence_penalty": 0, "stop": null, "stream": false}
+# pylint: disable=line-too-long
 
-### against local PowerProxy (text)
+import argparse
 
-POST http://localhost/openai/deployments/gpt-35-turbo/chat/completions?api-version=2024-06-01 HTTP/1.1
-Content-Type: application/json
-Connection: keep-alive
-api-key: 72bd81ef32763530b29e3da63d46ad6
-X-OpenAI-Client-User-Agent: {"bindings_version": "0.27.8", "httplib": "requests", "lang": "python", "lang_version": "3.11.4", "platform": "Windows-10-10.0.22621-SP0", "publisher": "openai", "uname": "Windows 10 10.0.22621 AMD64 Intel64 Family 6 Model 142 Stepping 10, GenuineIntel"}
-User-Agent: OpenAI/v1 PythonBindings/0.27.8
-Accept-Encoding: gzip, deflate
-Accept: */*
+from openai import AzureOpenAI
 
-{"messages": [{"role": "system", "content": "You are an AI assistant that helps people find information."}, {"role": "user", "content": "Tell me a joke!"}, {"role": "assistant", "content": "Why did the tomato turn red? Because it saw the salad dressing!"}, {"role": "user", "content": "Yeah, that's a great one."}], "temperature": 0, "max_tokens": 800, "top_p": 0.95, "frequency_penalty": 0, "presence_penalty": 0, "stop": null, "stream": false}
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    "--powerproxy-endpoint", type=str, default="http://localhost", help="Path to PowerProxy/Azure OpenAI endpoint"
+)
+parser.add_argument(
+    "--api-key", type=str, default="04ae14bc78184621d37f1ce57a52eb7", help="API key to access PowerProxy"
+)
+parser.add_argument("--deployment-name", type=str, default="gpt-4o", help="Name of Azure OpenAI deployment to test")
+parser.add_argument(
+    "--api-version", type=str, default="2024-06-01", help="API version to use when accessing Azure OpenAI"
+)
+args, unknown = parser.parse_known_args()
 
-### against local PowerProxy (image)
-POST http://localhost/openai/deployments/gpt-4o/chat/completions?api-version=2024-06-01 HTTP/1.1
-Content-Type: application/json
-Connection: keep-alive
-api-key: 72bd81ef32763530b29e3da63d46ad6
-X-OpenAI-Client-User-Agent: {"bindings_version": "0.27.8", "httplib": "requests", "lang": "python", "lang_version": "3.11.4", "platform": "Windows-10-10.0.22621-SP0", "publisher": "openai", "uname": "Windows 10 10.0.22621 AMD64 Intel64 Family 6 Model 142 Stepping 10, GenuineIntel"}
-User-Agent: OpenAI/v1 PythonBindings/0.27.8
-Accept-Encoding: gzip, deflate
-Accept: */*
+client = AzureOpenAI(azure_endpoint=args.powerproxy_endpoint, api_version=args.api_version, api_key=args.api_key)
 
-{
-    "messages": [
-      {
-        "role": "user",
-        "content": [
-          {
-            "type": "text",
-            "text": "What’s in this image?"
-          },
-          {
-            "type": "image_url",
-            "image_url": {
-            "url": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAoHCBUVFRgWFBYWGRgaGBoYGhwcGRwcGhwYGhoZJBgc
+response = client.chat.completions.create(
+    model=args.deployment_name,
+    messages=[
+        {
+            "role": "system",
+            "content": "You are an AI assistant that helps people find information.",
+        },
+        {
+            "role": "user",
+            "content": [
+                {"type": "text", "text": "Describe this picture:"},
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": """data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAoHCBUVFRgWFBYWGRgaGBoYGhwcGRwcGhwYGhoZJBgc
 HhwcIy4nHB4rHxwZKDgmKy8xNzU1HCQ7QDs1Py40NTEBDAwMDw8PGA8SEDEdFh0/MTExMTExMTEx
 MTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMf/AABEIALcBEwMBIgACEQED
 EQH/xAAbAAEAAgMBAQAAAAAAAAAAAAAABAUCAwYBB//EAEQQAAIBAgQDBwEEBgcHBQAAAAECAAMR
@@ -161,25 +154,22 @@ ptnCWRUZwDkLBVBbKTmAJtcA8hLyIHNYXsy1PEVcSuJq95WVFe60ytkFksuXSw/nJOH7PUxXGIqs
 9asoIRntamD5siKAqk82tc9ZeRA57ivZw18RSxBr1FaiWNNVCZQWWzXupLXF+c18b7MnEvTd8VXU
 U3WoioKYUOuzEFDmO++150sQIZw793k71g9rd5lXNfrlIy3+JzHCOwq4as9ejisSr1GLVL92Vcli
 xzLktuzWta1zOziB4J7EQEREBERAREQEREBERAREQEREBERAREQEREBERAREQPJ7EQEREBERAREQ
-EREBERAREQEREBERAREQP//Z",
-            "detail": "high"
-          }
-          }
-        ]
-      }
+EREBERAREQEREBERAREQP//Z""",
+                        "detail": "high",
+                    },
+                },
+            ],
+            "max_tokens": 1000,
+            "stream": False,
+        },
     ],
-    "max_tokens": 300
-  }
+    temperature=0,
+    max_tokens=1_000,
+    top_p=0.95,
+    frequency_penalty=0,
+    presence_penalty=0,
+    stop=None,
+    stream=False,
+)
 
-### against PowerProxy deployed on Container Apps
-
-POST https://___.___.___.azurecontainerapps.io/openai/deployments/gpt-35-turbo/chat/completions?api-version=2024-06-01 HTTP/1.1
-Content-Type: application/json
-Connection: keep-alive
-api-key: 72bd81ef32763530b29e3da63d46ad6
-X-OpenAI-Client-User-Agent: {"bindings_version": "0.27.8", "httplib": "requests", "lang": "python", "lang_version": "3.11.4", "platform": "Windows-10-10.0.22621-SP0", "publisher": "openai", "uname": "Windows 10 10.0.22621 AMD64 Intel64 Family 6 Model 142 Stepping 10, GenuineIntel"}
-User-Agent: OpenAI/v1 PythonBindings/0.27.8
-Accept-Encoding: gzip, deflate
-Accept: */*
-
-{"messages": [{"role": "system", "content": "You are an AI assistant that helps people find information."}, {"role": "user", "content": "Tell me a joke!"}, {"role": "assistant", "content": "Why did the tomato turn red? Because it saw the salad dressing!"}, {"role": "user", "content": "Yeah, that's a great one."}], "temperature": 0, "max_tokens": 800, "top_p": 0.95, "frequency_penalty": 0, "presence_penalty": 0, "stop": null, "stream": false}
+print(response.choices[0].message.content)

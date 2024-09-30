@@ -31,7 +31,7 @@ parser.add_argument(
     help="Name of Azure OpenAI deployment to test (Embeddings)",
 )
 parser.add_argument(
-    "--api-version", type=str, default="2024-02-01", help="API version to use when accessing Azure OpenAI"
+    "--api-version", type=str, default="2024-06-01", help="API version to use when accessing Azure OpenAI"
 )
 args = parser.parse_args()
 
