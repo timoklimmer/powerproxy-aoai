@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.13-slim
 
 # tell the host we are running on port 8000
 # note: we intentionally run on a port >= 1024 here because lower ports needed special treatment
