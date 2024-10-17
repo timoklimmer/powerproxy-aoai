@@ -221,6 +221,15 @@ async def handle_request(request: Request, path: str):
     routing_slip["api_version"] = request.query_params["api-version"] if "api-version" in request.query_params else ""
     foreach_plugin(config.plugins, "on_new_request_received", routing_slip)
 
+    # remove undesired headers from request
+    forward_http_header_only_if_name_matches = config.get("aoai/forward_http_header_only_if_name_matches", ".*")
+    headers = {
+        header_name: request.headers[header_name]
+        for header_name in request.headers.keys()
+        if re.match(forward_http_header_only_if_name_matches, header_name, flags=re.IGNORECASE)
+        and header_name.lower() not in ["host", "content-length"]
+    }
+
     # identify client
     # notes: - When API authentication is used, we get an API key in header 'api-key'. This would usually be the API key
     #          for Azure Open AI, but we configure and use client-specific keys here for the proxy to identify the
@@ -231,10 +240,6 @@ async def handle_request(request: Request, path: str):
     #          from the config that has 'uses_entra_id_auth: true'.
     #        - Some requests may neither contain an API key nor an Azure AD token. In that case, we need to make sure
     #          that the proxy continues to work.
-    headers = {
-        key: request.headers[key]
-        for key in set(request.headers.keys()) - {"Host", "host", "Content-Length", "content-length"}
-    }
     client = None
     if "api-key" in headers:
         if headers["api-key"] not in config.key_client_map:

@@ -112,6 +112,9 @@
         "Aoai": {
             "type": "object",
             "properties": {
+                "forward_http_header_only_if_name_matches": {
+                    "type": "string"
+                },
                 "endpoints": {
                     "type": "array",
                     "items": {
