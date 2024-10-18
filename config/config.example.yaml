@@ -62,7 +62,7 @@ plugins:
 aoai:
   # optional. if specified, PowerProxy will forward only those headers whose name matches the given regex.
   # using this feature may be required when PowerProxy's host adds additional, undesired headers, and if AOAI is
-  # returning 403 HTTP errors because of that. by default, all headers are forwarded. if you run into 403 issues,
+  # returning 431 HTTP errors because of that. by default, all headers are forwarded. if you run into 431 issues,
   # try setting this setting to (?!x-) to remove all x-* headers. syntax is standard Python regex syntax.
   # forward_http_header_only_if_name_matches: (?!x-)
   endpoints:
