@@ -82,13 +82,14 @@ async def lifespan(app: FastAPI):
             transport=httpx.MockTransport(get_mock_response),
         )
         app.state.aoai_targets["mock"] = {
-            "Mock client": {
-                "url": "",
-                "key": "",
-                "client": app.state.aoai_endpoint_clients["mock"],
-                "next_request_not_before_timestamp_ms": 0,
-                "non_streaming_fraction": 1,
-            }
+            "name": "mock",
+            "type": "endpoint",
+            "url": "https://mock/",
+            "endpoint": "mock",
+            "endpoint_key": "",
+            "endpoint_client": app.state.aoai_endpoint_clients["mock"],
+            "next_request_not_before_timestamp_ms": 0,
+            "non_streaming_fraction": 1,
         }
     else:
         for endpoint in config["aoai/endpoints"]:
