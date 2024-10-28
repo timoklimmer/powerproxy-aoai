@@ -102,8 +102,10 @@ class TokenCountingPlugin(PowerProxyPlugin):
         super().on_data_event_from_target_received(routing_slip)
 
         self.completion_tokens = self.completion_tokens + 1 if self.completion_tokens else 1
-        if "data_from_target" in routing_slip and "usage" in routing_slip["data_from_target"]:
-            self.last_seen_usage_object_in_data_event = json.loads(routing_slip["data_from_target"])["usage"]
+        if "data_from_target" in routing_slip:
+            data_from_target_json = json.loads(routing_slip["data_from_target"])
+            if "usage" in data_from_target_json:
+                self.last_seen_usage_object_in_data_event = data_from_target_json["usage"]
 
     def on_end_of_target_response_stream_reached(self, routing_slip):
         """Process the end of a stream (needs streaming requested)."""
