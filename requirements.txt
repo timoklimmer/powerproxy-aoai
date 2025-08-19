@@ -6,4 +6,4 @@ tiktoken==0.11.0
 azure-identity==1.24.0
 azure-monitor-ingestion==1.1.0
 redis[hiredis]==6.4.0
-jsonschema==4.25.0
+jsonschema==4.25.1
