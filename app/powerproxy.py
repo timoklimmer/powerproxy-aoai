@@ -206,13 +206,20 @@ async def handle_request(request: Request, path: str):
         "incoming_request_body": await request.body(),
         "path": path,
     }
+    is_v1_request = False
     routing_slip["virtual_deployment"] = None
     deployment_match = re.search(r"(?<=deployments\/)[^\/]+", path)
+
     if deployment_match:
         routing_slip["virtual_deployment"] = deployment_match.group(0)
     routing_slip["incoming_request_body_dict"] = None
     try:
         routing_slip["incoming_request_body_dict"] = await request.json()
+        # In case deployment id is not available in the request path, extract it from the body.
+        # Compliance with https://learn.microsoft.com/en-us/azure/ai-foundry/openai/latest V1 apis.
+        if not routing_slip.get("virtual_deployment") and routing_slip["incoming_request_body_dict"].get('model'):
+            routing_slip["virtual_deployment"] = routing_slip["incoming_request_body_dict"].get('model')
+            is_v1_request = True
     except:
         pass
     routing_slip["is_non_streaming_response_requested"] = routing_slip["incoming_request_body_dict"] and not (
@@ -341,9 +348,15 @@ async def handle_request(request: Request, path: str):
 
         # replace deployment against standin in path if target is deployment standin
         if aoai_target["type"] == "virtual_deployment_standin":
-            routing_slip["path"] = re.sub(
-                r"/deployments/[^/]+", f"/deployments/{aoai_target['standin']}", routing_slip["path"]
-            )
+            if not is_v1_request:
+                routing_slip["path"] = re.sub(
+                    r"/deployments/[^/]+", f"/deployments/{aoai_target['standin']}", routing_slip["path"]
+                )
+            else:
+                if routing_slip["incoming_request_body_dict"] and "model" in routing_slip["incoming_request_body_dict"]:
+                    routing_slip["incoming_request_body_dict"]["model"] = aoai_target["standin"]
+                    # Update the request body content
+                    routing_slip["incoming_request_body"] = json.dumps(routing_slip["incoming_request_body_dict"]).encode()
 
         # remember target and request start time
         routing_slip["aoai_endpoint"] = aoai_target["endpoint"]
