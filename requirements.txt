@@ -1,4 +1,4 @@
-PyYAML==6.0.2
+PyYAML==6.0.3
 httpx==0.28.1
 uvicorn[standard]==0.37.0
 fastapi==0.117.1
