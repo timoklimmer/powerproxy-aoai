@@ -2,7 +2,7 @@ PyYAML==6.0.3
 httpx==0.28.1
 uvicorn[standard]==0.37.0
 fastapi==0.118.0
-tiktoken==0.11.0
+tiktoken==0.12.0
 azure-identity==1.25.1
 azure-monitor-ingestion==1.1.0
 redis[hiredis]==6.4.0
