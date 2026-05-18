@@ -4,7 +4,7 @@ uvicorn[standard]==0.47.0
 fastapi==0.136.1
 uvicorn[standard]==0.47.0
 fastapi==0.136.1
-tiktoken==0.12.0
+tiktoken==0.13.0
 azure-identity==1.25.3
 azure-monitor-ingestion==1.1.0
 redis[hiredis]==7.4.0
